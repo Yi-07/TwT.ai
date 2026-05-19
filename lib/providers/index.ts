@@ -10,6 +10,22 @@ const providerConstructors: Record<
   deepseek: DeepSeekProvider,
 };
 
+interface ProviderMeta {
+  id: string;
+  name: string;
+}
+
+const providerMetaList: ProviderMeta[] = [
+  { id: "claude", name: "Claude" },
+  { id: "deepseek", name: "DeepSeek" },
+];
+
+export { type ProviderMeta };
+
+export function getProviderMetas(): ProviderMeta[] {
+  return providerMetaList;
+}
+
 const providerCache = new Map<string, ModelProvider>();
 
 export function getProvider(id: string): ModelProvider {
