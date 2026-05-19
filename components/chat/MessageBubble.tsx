@@ -1,11 +1,46 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Message } from "@/types/conversation";
+import type { Segment } from "@/types/artifact";
+import { parseArtifact } from "@/lib/utils/parseArtifact";
+import { ArtifactSandbox } from "@/components/artifact/ArtifactSandbox";
+import { ArtifactToolbar } from "@/components/artifact/ArtifactToolbar";
 
 interface MessageBubbleProps {
   message: Message;
+}
+
+function SegmentRenderer({ seg }: { seg: Segment }) {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  if (seg.type === "text") {
+    return (
+      <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-zinc-950 [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-zinc-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm dark:[&_code]:bg-zinc-800 [&_table]:w-full [&_th]:border [&_th]:border-zinc-200 [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-zinc-200 [&_td]:px-3 [&_td]:py-2">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {seg.content}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-3">
+      <ArtifactToolbar title={seg.title} onRefresh={handleRefresh} />
+      <ArtifactSandbox
+        key={refreshKey}
+        artifactType={seg.artifactType}
+        title={seg.title}
+        content={seg.content}
+      />
+    </div>
+  );
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
@@ -27,10 +62,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             {message.content}
           </p>
         ) : (
-          <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-zinc-950 [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-zinc-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm dark:[&_code]:bg-zinc-800 [&_table]:w-full [&_th]:border [&_th]:border-zinc-200 [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-zinc-200 [&_td]:px-3 [&_td]:py-2">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {message.content}
-            </ReactMarkdown>
+          <div className="flex flex-col gap-2">
+            {parseArtifact(message.content).map((seg, i) => (
+              <SegmentRenderer key={i} seg={seg} />
+            ))}
           </div>
         )}
       </div>
