@@ -1,10 +1,12 @@
 import type { ModelProvider } from "@/types/provider";
+import { ClaudeProvider } from "./claude";
 import { DeepSeekProvider } from "./deepseek";
 
 const providerConstructors: Record<
   string,
   new () => ModelProvider
 > = {
+  claude: ClaudeProvider,
   deepseek: DeepSeekProvider,
 };
 

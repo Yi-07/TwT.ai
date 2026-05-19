@@ -15,6 +15,14 @@ export abstract class BaseProvider implements ModelProvider {
     this.controller = null;
   }
 
+  protected setupAbort(): void {
+    this.controller = new AbortController();
+  }
+
+  protected getSignal(): AbortSignal | undefined {
+    return this.controller?.signal;
+  }
+
   async stream(
     messages: Message[],
     options: ModelOptions = {},
