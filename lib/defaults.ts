@@ -21,8 +21,6 @@ export const ARTIFACT_SYSTEM_PROMPT = [
   "- Do NOT wrap explanatory text inside artifact tags",
   "- Plain text and artifact tags can appear in the same response —",
   "  write your explanation first, then the artifact",
-  "- Do NOT use import statements inside artifact tags. React, useState, useEffect,",
-  "  useRef, useCallback and other hooks are available as globals — use them directly.",
   "",
   "When in doubt, default to plain Markdown code blocks for code examples,",
   "and reserve artifact tags only for things the user would benefit from",
