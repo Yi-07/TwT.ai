@@ -96,7 +96,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
       </aside>
 
       {/* Main content */}
-      <div className="relative flex flex-1 flex-col min-w-0">
+      <div className="relative flex min-h-0 flex-1 flex-col min-w-0">
         {/* Top bar */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800">
           <div className="flex items-center gap-2">

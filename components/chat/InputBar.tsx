@@ -39,7 +39,7 @@ export function InputBar({ onSend, isStreaming }: InputBarProps) {
   );
 
   return (
-    <div className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
+    <div className="shrink-0 border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
       <div className="mx-auto flex max-w-3xl items-end gap-3 px-4 py-4">
         <textarea
           ref={textareaRef}

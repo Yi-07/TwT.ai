@@ -30,9 +30,17 @@ export function ConversationItem({
   onDelete,
 }: ConversationItemProps) {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(conversation.id)}
-      className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(conversation.id);
+        }
+      }}
+      className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors cursor-pointer ${
         isActive
           ? "bg-zinc-200/70 dark:bg-zinc-800"
           : "hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
@@ -66,6 +74,6 @@ export function ConversationItem({
           <line x1="14" y1="11" x2="14" y2="17" />
         </svg>
       </button>
-    </button>
+    </div>
   );
 }

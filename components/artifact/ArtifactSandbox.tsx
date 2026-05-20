@@ -51,9 +51,9 @@ function buildSrcdoc(type: ArtifactType, code: string): string {
 <html>
 <head>
 <meta charset="utf-8" />
-<script src="https://unpkg.com/react@18/umd/react.development.min.js" crossorigin="anonymous"><\/script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.min.js" crossorigin="anonymous"><\/script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin="anonymous"><\/script>
+<script src="https://unpkg.com/react@18/umd/react.development.min.js" ><\/script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.min.js" ><\/script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" ><\/script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, sans-serif; }

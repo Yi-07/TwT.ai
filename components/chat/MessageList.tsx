@@ -19,7 +19,7 @@ export function MessageList({ messages, isStreaming }: MessageListProps) {
 
   if (messages.length === 0 && !isStreaming) {
     return (
-      <div className="min-h-0 flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <p className="text-zinc-400">Start a conversation</p>
       </div>
     );
