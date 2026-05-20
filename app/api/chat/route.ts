@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { getProvider } from "@/lib/providers";
 import { getDefaultModel } from "@/lib/providers/registry";
+import { ARTIFACT_SYSTEM_PROMPT } from "@/lib/defaults";
 import type { Message } from "@/types/conversation";
 
 export async function POST(request: NextRequest) {
@@ -26,12 +27,16 @@ export async function POST(request: NextRequest) {
     systemPrompt?: string;
   };
 
+  const mergedSystemPrompt = systemPrompt
+    ? `${ARTIFACT_SYSTEM_PROMPT}\n\n${systemPrompt}`
+    : ARTIFACT_SYSTEM_PROMPT;
+
   const provider = getProvider(providerId);
 
   const stream = await provider.stream(messages, {
     temperature,
     maxTokens,
-    systemPrompt,
+    systemPrompt: mergedSystemPrompt,
   });
 
   return new Response(stream, {
