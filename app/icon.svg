@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect x="0" y="0" width="128" height="128" rx="28" fill="#0f172a"/>
+
+  <!-- Left eyebrow -->
+  <rect x="24" y="22" width="30" height="6" rx="3" fill="#818cf8"/>
+  <!-- Left eye -->
+  <rect x="33" y="34" width="7" height="24" rx="3.5" fill="#818cf8"/>
+
+  <!-- Right eyebrow -->
+  <rect x="74" y="22" width="30" height="6" rx="3" fill="#818cf8"/>
+  <!-- Right eye -->
+  <rect x="88" y="34" width="7" height="24" rx="3.5" fill="#818cf8"/>
+
+  <!-- ω mouth -->
+  <path d="M36 74 Q45 88 64 78 Q83 88 92 74"
+        fill="none" stroke="#67e8f9" stroke-width="6.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- left corner tuck -->
+  <path d="M36 74 Q33 69 36 65"
+        fill="none" stroke="#67e8f9" stroke-width="6.5"
+        stroke-linecap="round"/>
+  <!-- right corner tuck -->
+  <path d="M92 74 Q95 69 92 65"
+        fill="none" stroke="#67e8f9" stroke-width="6.5"
+        stroke-linecap="round"/>
+</svg>
