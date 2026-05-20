@@ -13,5 +13,5 @@ export function getProviderMetas(): ProviderMeta[] {
 }
 
 export function getDefaultModel(): string {
-  return process.env.NEXT_PUBLIC_DEFAULT_MODEL || "deepseek";
+  return process.env.NEXT_PUBLIC_DEFAULT_PROVIDER || "deepseek";
 }

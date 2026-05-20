@@ -390,7 +390,8 @@ with `NEXT_PUBLIC_`.
 ANTHROPIC_API_KEY=      # Claude (Anthropic)
 DEEPSEEK_API_KEY=       # DeepSeek
 # Future providers: add key here + register in /lib/providers/index.ts and /lib/providers/registry.ts
-NEXT_PUBLIC_APP_URL=    # e.g. http://localhost:3000
+NEXT_PUBLIC_DEFAULT_PROVIDER=  # Default AI provider when no conversation exists (claude | deepseek)
+NEXT_PUBLIC_APP_URL=           # e.g. http://localhost:3000
 ```
 
 ---
