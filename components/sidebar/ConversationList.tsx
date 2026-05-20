@@ -1,6 +1,7 @@
 "use client";
 
 import { useConversation } from "@/hooks/useConversation";
+import { getDefaultModel } from "@/lib/providers/registry";
 import { ConversationItem } from "./ConversationItem";
 
 export function ConversationList() {
@@ -16,7 +17,7 @@ export function ConversationList() {
     <div className="flex h-full flex-col">
       <div className="px-3 py-3">
         <button
-          onClick={() => createConversation("claude")}
+          onClick={() => createConversation(getDefaultModel())}
           className="flex w-full items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
         >
           <svg

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { ModelOptions } from "@/types/provider";
+import { getDefaultModel } from "@/lib/providers/registry";
 
 interface ModelState {
   activeModelId: string;
@@ -10,7 +11,7 @@ interface ModelState {
 }
 
 export const useModelStore = create<ModelState>()((set) => ({
-  activeModelId: "claude",
+  activeModelId: getDefaultModel(),
   modelSettings: {},
 
   setActiveModel: (id: string) => {

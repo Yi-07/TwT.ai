@@ -11,3 +11,7 @@ const providerMetaList: ProviderMeta[] = [
 export function getProviderMetas(): ProviderMeta[] {
   return providerMetaList;
 }
+
+export function getDefaultModel(): string {
+  return process.env.NEXT_PUBLIC_DEFAULT_MODEL || "deepseek";
+}

@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { getProvider } from "@/lib/providers";
+import { getDefaultModel } from "@/lib/providers/registry";
 import type { Message } from "@/types/conversation";
 
 export async function POST(request: NextRequest) {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   const {
     messages,
-    providerId = "claude",
+    providerId = getDefaultModel(),
     temperature,
     maxTokens,
     systemPrompt,

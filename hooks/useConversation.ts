@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useConversationStore } from "@/lib/store/conversation";
+import { getDefaultModel } from "@/lib/providers/registry";
 import type { Message } from "@/types/conversation";
 
 const nextMsgId = () => `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -20,7 +21,7 @@ export function useConversation() {
 
   const sendMessage = useCallback(
     (content: string) => {
-      const cId = activeId ?? createConversation("claude");
+      const cId = activeId ?? createConversation(getDefaultModel());
       const userMsg: Message = {
         id: nextMsgId(),
         role: "user",
