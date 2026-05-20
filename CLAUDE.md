@@ -46,6 +46,7 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │
 ├── components/
 │   ├── chat/
+│   │   ├── ChatView.tsx              # Client orchestrator: wires sidebar, chat, model controls, streaming
 │   │   ├── MessageList.tsx         # Iterates messages, renders MessageBubble per item
 │   │   ├── MessageBubble.tsx       # Splits segments: text → Markdown, artifact → ArtifactSandbox
 │   │   ├── InputBar.tsx            # Text input + send button
@@ -63,9 +64,11 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 ├── lib/
 │   ├── providers/
 │   │   ├── base.ts                 # Abstract base implementing ModelProvider
-│   │   ├── index.ts                # Provider registry + factory (DO NOT bypass this)
+│   │   ├── index.ts                # Provider registry + factory — SERVER ONLY (imports SDKs)
+│   │   ├── registry.ts             # Provider metadata (id, name) — CLIENT SAFE, no SDK imports
 │   │   ├── claude.ts               # Anthropic SDK adapter
 │   │   └── deepseek.ts             # DeepSeek adapter (OpenAI-compatible)
+│   ├── defaults.ts                 # Default system prompt (artifact instructions)
 │   ├── store/
 │   │   ├── conversation.ts         # Zustand: message list, conversation history
 │   │   └── model.ts                # Zustand: active model ID, per-model settings
@@ -97,22 +100,26 @@ Dependencies flow in one direction only — lower layers never import from highe
 ```
 types/
   ↑ (all modules depend on types; types depend on nothing)
-lib/providers   lib/utils
+lib/providers/registry   lib/utils
   ↑                ↑
-app/api/chat    lib/store
-       ↑           ↑
-          hooks/
-             ↑
-        components/
-             ↑
-         app/pages
+lib/providers/index   lib/store
+  ↑                ↑
+app/api/chat       hooks/
+                      ↑
+                 components/
+                      ↑
+                  app/pages
 ```
 
 Additional constraints:
 
-- `lib/providers/` is the **only** place allowed to call external model APIs.
+- `lib/providers/index.ts` is the **only** place allowed to call external model APIs.
+  It imports SDKs (`@anthropic-ai/sdk`) and must never be imported by client components.
+- `lib/providers/registry.ts` exports pure data (provider id, name) with **zero SDK imports**.
+  It is the **only** `lib/providers/` file that client components may import.
 - `app/api/chat/route.ts` is the **only** server entry point that invokes providers.
-- `components/` must never import from `lib/providers/` or `app/api/` directly.
+- `components/` must never import from `lib/providers/index.ts` or `app/api/` directly.
+  Components that need provider metadata import from `lib/providers/registry.ts`.
 - `lib/store/` must never import from `hooks/` or `components/`.
 - `types/artifact.ts` is imported by `lib/utils/parseArtifact.ts`,
   `components/chat/MessageBubble.tsx`, and `components/artifact/ArtifactSandbox.tsx`.
@@ -124,6 +131,18 @@ Additional constraints:
 
 All model API calls **must** go through `/lib/providers/`. Never call model APIs directly
 from components or other lib files.
+
+The provider layer is split into two files to prevent server-only SDK code from
+leaking into the client bundle:
+
+- **`index.ts`** (SERVER ONLY): Imports provider SDKs, provides `getProvider()` for
+  server-side instantiation. Only `app/api/chat/route.ts` imports this file.
+- **`registry.ts`** (CLIENT SAFE): Pure data — exports `ProviderMeta` type and
+  `getProviderMetas()`. Contains zero SDK imports. Client components import this file.
+
+If a client component imports `index.ts`, the entire SDK tree gets bundled into the
+browser, causing `UnhandledSchemeError: node:child_process`. Always use `registry.ts`
+for client-side provider lookups.
 
 ### ModelProvider interface (`/types/provider.ts`)
 
@@ -145,9 +164,10 @@ export interface ModelOptions {
 ### Adding a new provider
 
 1. Create `/lib/providers/<name>.ts` implementing `ModelProvider`
-2. Register it in `/lib/providers/index.ts`
-3. Add its env var to `.env.example`
-4. Do **not** touch UI components or the API route
+2. Register it in `/lib/providers/index.ts` (constructor map)
+3. Add its metadata to `/lib/providers/registry.ts` (id + name — pure data)
+4. Add its env var to `.env.example`
+5. Do **not** touch UI components or the API route
 
 ---
 
@@ -320,6 +340,8 @@ feat: integrate artifact rendering into MessageBubble
 feat: add React (Babel) runtime support inside sandbox
   ↓
 chore: finalize .env.example, README, and system prompt instructions
+	  ↓
+	feat: assemble pages — ChatView orchestrator + conversation route
 ```
 
 ---
@@ -367,7 +389,7 @@ with `NEXT_PUBLIC_`.
 ```bash
 ANTHROPIC_API_KEY=      # Claude (Anthropic)
 DEEPSEEK_API_KEY=       # DeepSeek
-# Future providers: add key here + register in /lib/providers/index.ts
+# Future providers: add key here + register in /lib/providers/index.ts and /lib/providers/registry.ts
 NEXT_PUBLIC_APP_URL=    # e.g. http://localhost:3000
 ```
 
@@ -376,6 +398,8 @@ NEXT_PUBLIC_APP_URL=    # e.g. http://localhost:3000
 ## Important Rules (Do Not Violate)
 
 - **Never** call model APIs directly from components or outside `/lib/providers/`
+- **Never** import `lib/providers/index.ts` (or any file that imports an SDK) from
+  client components — use `lib/providers/registry.ts` for provider metadata
 - **Never** use `useEffect` for initial data fetching — use Server Components
 - **Never** use `any` type — use `unknown` and narrow it
 - **Never** add a new npm package without confirming with the user first
@@ -387,5 +411,7 @@ NEXT_PUBLIC_APP_URL=    # e.g. http://localhost:3000
   should require zero UI changes
 - **Always** inject artifact content via `srcdoc` — never via `src`, `innerHTML`,
   or dynamic `<script>` injection into the parent page
+- **Always** add new provider metadata to both `index.ts` (constructor) and
+  `registry.ts` (pure data) when adding a provider
 - **Always** commit at every checkpoint listed above before proceeding — this enables
   clean rollback if a later checkpoint introduces a regression
