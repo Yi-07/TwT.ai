@@ -6,7 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 export class ClaudeProvider extends BaseProvider {
   id = "claude";
   name = "Claude";
-  protected defaultModel = "claude-sonnet-4-6";
+  protected defaultModel = process.env.CLAUDE_MODEL || "claude-sonnet-4-6";
   protected apiKey: string;
   protected baseUrl = "https://api.anthropic.com";
 
