@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { getProviderMetas } from "@/lib/providers";
+import { getProviderMetas } from "@/lib/providers/registry";
 import { useModelStore } from "@/lib/store/model";
 
 export function ModelSwitcher() {

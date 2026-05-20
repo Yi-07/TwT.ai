@@ -1,6 +1,7 @@
 import type { ModelProvider } from "@/types/provider";
 import { ClaudeProvider } from "./claude";
 import { DeepSeekProvider } from "./deepseek";
+import { type ProviderMeta, getProviderMetas } from "./registry";
 
 const providerConstructors: Record<
   string,
@@ -10,21 +11,7 @@ const providerConstructors: Record<
   deepseek: DeepSeekProvider,
 };
 
-interface ProviderMeta {
-  id: string;
-  name: string;
-}
-
-const providerMetaList: ProviderMeta[] = [
-  { id: "claude", name: "Claude" },
-  { id: "deepseek", name: "DeepSeek" },
-];
-
-export { type ProviderMeta };
-
-export function getProviderMetas(): ProviderMeta[] {
-  return providerMetaList;
-}
+export { type ProviderMeta, getProviderMetas };
 
 const providerCache = new Map<string, ModelProvider>();
 
@@ -45,8 +32,6 @@ export function getProvider(id: string): ModelProvider {
 }
 
 export function listProviders(): Array<{ id: string; name: string }> {
-  // Instantiate each provider type once to read its id/name,
-  // then cache for future use.
   return Object.keys(providerConstructors).map((id) => {
     const provider = getProvider(id);
     return { id: provider.id, name: provider.name };
