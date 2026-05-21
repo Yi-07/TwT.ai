@@ -2,9 +2,9 @@
 
 ## Project: TwT.ai — Multi-Model AI Chat Frontend
 
-A chat interface inspired by claude.ai, supporting Claude and DeepSeek models
-with streaming responses, conversation history, per-model settings, and an
-Artifact system that renders interactive HTML/React/SVG inline.
+A chat interface inspired by claude.ai, supporting Claude, DeepSeek, and
+ModelScope models with streaming responses, conversation history, per-model
+settings, and an Artifact system that renders interactive HTML/React/SVG inline.
 
 **Tech Stack**: Next.js 15.5 (App Router), TypeScript strict, Tailwind CSS v4,
 Zustand v5, pnpm
@@ -253,6 +253,100 @@ which unpkg CDN rejects. Without `crossorigin`, scripts load normally.
 
 ---
 
+## Phase 8 — Parser Refactor & Button Fixes
+
+### `refactor: streaming state machine parser + stable segment IDs` (a8f1ffa)
+
+Replaced regex-based `parseArtifact` with `ArtifactParser` state machine:
+- Three states: `text` → `tag_open` → `body`
+- Only processes delta on each call, not full string
+- Buffers incomplete opening tags until `>` found
+- Holds body content until `</artifact>` closes — then emits complete artifact
+- Monotonic prefix detection auto-creates new parser when switching messages
+- `flush()` converts buffered partial content to text on stream end
+- Added stable `id` field to `Segment` type (`text-0`, `artifact-react-0`, ...)
+
+**Button fixes**:
+- `SegmentRenderer` extracted from `MessageBubble` body to module-level component —
+  prevents state destruction on every parent re-render
+- `ArtifactToolbar`: `expanded` moved to external prop + `onToggleExpand` callback
+- `ArtifactSandbox`: accepts `expanded` prop, height ≥800px when expanded
+- `key={seg.id}` on `SegmentRenderer` preserves instances across streaming re-renders
+
+---
+
+## Phase 9 — Persistent Storage
+
+### `feat: add persistent storage for conversations and model settings` (b9ecd00)
+
+**Storage backends**:
+- Conversations → IndexedDB via `idb-keyval` + custom Zustand `StateStorage` adapter
+- Model settings → localStorage (Zustand default)
+- SSR-safe: `noopStorage()` fallback when `typeof window === 'undefined'`
+
+**Limits**:
+- 50 conversations max — oldest evicted on creation
+- 200 messages per conversation — earliest truncated on insert
+
+`lib/store/storage.ts` — `StateStorage` adapters with lazy `idb-keyval` initialization.
+
+### `fix: null parser on first call` (7420961)
+
+`lastRaw` initialised as `""` — every string passes `startsWith("")`, so the
+`!raw.startsWith(lastRaw)` guard never fired. Added explicit `!currentParser` check.
+
+---
+
+## Phase 10 — UX Improvements
+
+### `feat: slow-response warning, stop button, and retry` (ffb4c20)
+
+**Slow response timeout** (`useStream.ts`):
+- 15-second timer started on `send()`
+- Cleared on first valid SSE delta
+- If timer fires → `isSlowResponse = true` → amber warning text appears
+- `isSlowResponse` exposed in hook return value
+
+**Stop button** (`InputBar.tsx`):
+- During streaming: send button replaced by square stop icon
+- Click calls `onStop()` → `abort()` — stops the stream, preserves partial output
+- Textarea stays enabled during streaming for pre-typing
+
+**Retry** (`ChatView.tsx`):
+- `lastUserMessageRef` tracks the last sent message content
+- After error or cancel (empty content): "Retry" button appears
+- `handleRetry()` re-sends the cached message content
+
+---
+
+## Phase 11 — sendPrompt API
+
+### `feat: add sendPrompt API for sandbox-to-chat communication` (968dba0)
+
+`ArtifactSandbox` injects `window.sendPrompt(text)` into every sandbox type
+(react/html/svg) before all other scripts. Calls `postMessage` with
+`{ type: 'sendPrompt', text }`.
+
+Prop chain: `ArtifactSandbox` → `SegmentRenderer` → `MessageBubble` →
+`MessageList` → `ChatView.handleSendPrompt` → `handleSend(text)`.
+
+`ARTIFACT_SYSTEM_PROMPT` updated with sendPrompt documentation and two use cases
+(interactive navigation + form submission).
+
+---
+
+## Phase 12 — ModelScope Provider
+
+### `feat: add ModelScope provider` (222621b)
+
+`lib/providers/modelscope.ts` — `ModelScopeProvider`:
+- OpenAI-compatible endpoint: `https://api-inference.modelscope.cn/v1`
+- Auth via `DASHSCOPE_API_KEY`
+- Default model: `qwen-plus` (configurable via `MODELSCOPE_MODEL` env var)
+- Registered in `index.ts` and `registry.ts`
+
+---
+
 ## Architecture Decisions
 
 1. **Provider registry split** — `index.ts` (server, imports SDKs) vs `registry.ts`
@@ -264,21 +358,27 @@ which unpkg CDN rejects. Without `crossorigin`, scripts load normally.
 
 3. **SSE stream consolidation** — Claude SDK events are converted to OpenAI-compatible
    SSE format inside ClaudeProvider. This means `useStream` only needs one parser
-   for both providers.
+   for two providers.
 
-4. **Store design** — Zustand `create()` for simplicity. Components that need
-   synchronous post-mutation reads call `getState()` directly to avoid stale
+4. **Store design** — Zustand `create()` with `persist` middleware. Components that
+   need synchronous post-mutation reads call `getState()` directly to avoid stale
    closure issues in event handlers.
 
 5. **Artifact sandbox security** — `sandbox="allow-scripts"` only, no `allow-same-origin`.
    Content injected via `srcdoc` only. CDN scripts limited to allowlist.
 
+6. **Streaming parser as state machine** — Character-level state machine that processes
+   only the delta on each chunk, buffers partial tags, and assigns stable IDs.
+   Eliminates regex re-scanning of accumulated text.
+
+7. **Dual storage for persistence** — Large conversation data in IndexedDB (structured,
+   queryable), small model settings in localStorage (simple key-value). Both use
+   Zustand `persist` middleware with `partialize` to exclude functions.
+
 ---
 
 ## Known Limitations
 
-- No persistence: conversations and settings live in Zustand stores (in-memory),
-  lost on page refresh
 - No mobile sidebar toggle: sidebar is hidden below `md` breakpoint with no hamburger
 - Artifact React sandbox: `export default` stripping is regex-based, may fail
   on complex export patterns

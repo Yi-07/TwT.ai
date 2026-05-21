@@ -3,7 +3,7 @@
 ## Project Overview
 
 A multi-model AI chat frontend inspired by claude.ai.
-Users can switch between AI models (Claude, DeepSeek, and future providers)
+Users can switch between AI models (Claude, DeepSeek, ModelScope, and future providers)
 with persistent conversation history, streaming responses, per-model settings,
 and an Artifact system that renders interactive HTML/React views inline in chat.
 
@@ -15,6 +15,9 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 - Per-model parameter settings (temperature, max tokens, system prompt)
 - Artifact system: model output parsed for `<artifact>` tags and rendered in a
   sandboxed iframe alongside the conversation
+- Persistent storage: conversations in IndexedDB, model settings in localStorage
+- Slow-response warning, stop button, and retry after error/cancel
+- sandbox → chat communication via `window.sendPrompt()` API
 - Responsive layout for both desktop and mobile
 
 ---
@@ -67,14 +70,16 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   │   ├── index.ts                # Provider registry + factory — SERVER ONLY (imports SDKs)
 │   │   ├── registry.ts             # Provider metadata (id, name) — CLIENT SAFE, no SDK imports
 │   │   ├── claude.ts               # Anthropic SDK adapter
-│   │   └── deepseek.ts             # DeepSeek adapter (OpenAI-compatible)
-│   ├── defaults.ts                 # Default system prompt (artifact instructions)
+│   │   ├── deepseek.ts             # DeepSeek adapter (OpenAI-compatible)
+│   │   └── modelscope.ts           # ModelScope adapter (OpenAI-compatible)
+│   ├── defaults.ts                 # Default system prompt (artifact + sendPrompt instructions)
 │   ├── store/
-│   │   ├── conversation.ts         # Zustand: message list, conversation history
-│   │   └── model.ts                # Zustand: active model ID, per-model settings
+│   │   ├── conversation.ts         # Zustand: message list, conversation history (IndexedDB persisted)
+│   │   ├── model.ts                # Zustand: active model ID, per-model settings (localStorage persisted)
+│   │   └── storage.ts              # IndexedDB + localStorage storage adapters for Zustand persist
 │   └── utils/
 │       ├── stream.ts               # ReadableStream / SSE helper functions
-│       └── parseArtifact.ts        # Parses <artifact> tags → Segment[]
+│       └── parseArtifact.ts        # State-machine parser for <artifact> tags → Segment[]
 │
 ├── hooks/
 │   ├── useStream.ts                # Consumes SSE stream, drives incremental rendering
@@ -202,19 +207,21 @@ an ordered array of segments. Each segment is either plain text or an artifact.
 export type ArtifactType = 'react' | 'html' | 'svg'
 
 export type Segment =
-  | { type: 'text'; content: string }
-  | { type: 'artifact'; artifactType: ArtifactType; title: string; content: string }
+  | { type: 'text'; id: string; content: string }
+  | { type: 'artifact'; id: string; artifactType: ArtifactType; title: string; content: string }
 ```
+
+Each segment carries a stable `id` (`text-0`, `artifact-react-0`, etc.) so React
+can preserve component instances across streaming re-renders.
 
 ### Parser (`/lib/utils/parseArtifact.ts`)
 
-- Input: raw string (may be partial during streaming)
-- Output: `Segment[]`
-- Scans for `<artifact ...>` opening tags and `</artifact>` closing tags
-- Content outside tags → `{ type: 'text' }`
-- Content inside tags → `{ type: 'artifact', artifactType, title, content }`
-- Must handle partial/incomplete tags gracefully during streaming
-  (buffer the incomplete tag, do not emit until closing tag is confirmed)
+- State machine with three states: `text` → `tag_open` → `body`
+- Only processes new delta on each call, not the full accumulated string
+- Buffers incomplete opening tags until `>` is found — no partial emission
+- Holds body content until `</artifact>` closing tag arrives — then emits artifact segment
+- Monotonic prefix detection auto-creates a new parser when switching messages
+- `flush()` converts any buffered partial content back to text when stream ends
 
 ### Sandbox (`/components/artifact/ArtifactSandbox.tsx`)
 
@@ -225,7 +232,9 @@ export type Segment =
 - For `type="svg"`: wraps SVG in a minimal HTML shell
 - Communicates with the parent via `window.postMessage` only
   - Sandbox → parent: `{ type: 'resize', height: number }`
+  - Sandbox → parent: `{ type: 'sendPrompt', text: string }`
   - Parent → sandbox: `{ type: 'theme', value: 'light' | 'dark' }`
+- Exposes `window.sendPrompt(text)` in sandbox global scope (injected before all other scripts)
 - CDN allowlist (loaded inside the sandbox only):
   - `https://unpkg.com/`
   - `https://cdn.jsdelivr.net/`
@@ -408,5 +417,7 @@ NEXT_PUBLIC_APP_URL=           # e.g. http://localhost:3000
   or dynamic `<script>` injection into the parent page
 - **Always** add new provider metadata to both `index.ts` (constructor) and
   `registry.ts` (pure data) when adding a provider
+- **Always** add new provider env vars for both API key and model version
+  (e.g. `PROVIDER_API_KEY` + `PROVIDER_MODEL`) to `.env.example`
 - **Always** commit at every checkpoint listed above before proceeding — this enables
   clean rollback if a later checkpoint introduces a regression
