@@ -25,7 +25,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
     activeId,
     createConversation,
     sendMessage,
-    appendAssistantMessage,
+    createAssistantMessage,
+    updateAssistantMessage,
   } = useConversation();
 
   const activeModelId = useModelStore((s) => s.activeModelId);
@@ -38,6 +39,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
     });
 
   const lastUserMessageRef = useRef<string>("");
+  const assistantMsgIdRef = useRef<string>("");
 
   // Handle "new" conversation: create one and redirect
   useEffect(() => {
@@ -55,20 +57,16 @@ export function ChatView({ conversationId }: ChatViewProps) {
     }
   }, [activeId, conversationId, router]);
 
-  // When streaming completes, append assistant message
-  const prevStreaming = useRef(isStreaming);
-  const contentRef = useRef(rawContent);
-  contentRef.current = rawContent;
-
+  // Sync streaming content into the store so the same Message key
+  // persists from pre-stream through streaming to post-stream —
+  // no iframe is ever unmounted/remounted.
   useEffect(() => {
-    if (prevStreaming.current && !isStreaming && contentRef.current && !error) {
-      const cId = activeId;
-      if (cId && cId !== "new") {
-        appendAssistantMessage(cId, contentRef.current);
-      }
+    const msgId = assistantMsgIdRef.current;
+    const cId = activeId;
+    if (isStreaming && msgId && cId && cId !== "new") {
+      updateAssistantMessage(cId, msgId, rawContent);
     }
-    prevStreaming.current = isStreaming;
-  }, [isStreaming, error, activeId, appendAssistantMessage]);
+  }, [rawContent, isStreaming, activeId, updateAssistantMessage]);
 
   const handleSend = useCallback(
     (content: string) => {
@@ -79,13 +77,25 @@ export function ChatView({ conversationId }: ChatViewProps) {
         router.replace(`/c/${cId}`);
       }
 
+      // Create an empty assistant message before streaming starts.
+      // Its id stays stable through the entire stream lifecycle.
+      const msgId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      assistantMsgIdRef.current = msgId;
+      createAssistantMessage(cId, msgId);
+
       const { conversations } = useConversationStore.getState();
       const conv = conversations.find((c) => c.id === cId);
       const messages = conv?.messages ?? [];
 
       send(messages);
     },
-    [sendMessage, activeId, send, router],
+    [
+      sendMessage,
+      activeId,
+      createAssistantMessage,
+      send,
+      router,
+    ],
   );
 
   const handleRetry = useCallback(() => {
@@ -103,7 +113,17 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const allMessages = active?.messages ?? [];
   const showRetry =
-    !isStreaming && (error || contentRef.current === "") && lastUserMessageRef.current;
+    !isStreaming &&
+    (error || (lastUserMessageRef.current && !rawContent)) &&
+    lastUserMessageRef.current;
+
+  // Streaming starts with content="" so the first chunk is visible
+  // as soon as it arrives. StreamingIndicator shows while waiting.
+  const lastMsg = allMessages.at(-1);
+  const waitingForFirstChunk =
+    isStreaming &&
+    lastMsg?.role === "assistant" &&
+    lastMsg.content === "";
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-black">
@@ -127,20 +147,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
         {/* Messages */}
         <MessageList
-          messages={
-            isStreaming && rawContent
-              ? [
-                  ...allMessages,
-                  {
-                    id: "streaming",
-                    role: "assistant" as const,
-                    content: rawContent,
-                    createdAt: Date.now(),
-                  },
-                ]
-              : allMessages
-          }
-          isStreaming={isStreaming}
+          messages={allMessages}
+          isStreaming={waitingForFirstChunk}
           isSlow={isSlowResponse}
           onSendPrompt={handleSendPrompt}
         />

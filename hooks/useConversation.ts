@@ -18,6 +18,7 @@ export function useConversation() {
   const deleteConversation = useConversationStore((s) => s.deleteConversation);
   const setActive = useConversationStore((s) => s.setActive);
   const addMessage = useConversationStore((s) => s.addMessage);
+  const updateMessage = useConversationStore((s) => s.updateMessage);
 
   const sendMessage = useCallback(
     (content: string) => {
@@ -32,6 +33,26 @@ export function useConversation() {
       return cId;
     },
     [activeId, createConversation, addMessage],
+  );
+
+  const createAssistantMessage = useCallback(
+    (conversationId: string, msgId: string) => {
+      const msg: Message = {
+        id: msgId,
+        role: "assistant",
+        content: "",
+        createdAt: Date.now(),
+      };
+      addMessage(conversationId, msg);
+    },
+    [addMessage],
+  );
+
+  const updateAssistantMessage = useCallback(
+    (conversationId: string, msgId: string, content: string) => {
+      updateMessage(conversationId, msgId, content);
+    },
+    [updateMessage],
   );
 
   const appendAssistantMessage = useCallback(
@@ -55,6 +76,8 @@ export function useConversation() {
     deleteConversation,
     setActive,
     sendMessage,
+    createAssistantMessage,
+    updateAssistantMessage,
     appendAssistantMessage,
   };
 }

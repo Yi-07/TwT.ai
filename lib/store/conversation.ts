@@ -16,6 +16,11 @@ interface ConversationState {
   deleteConversation: (id: string) => void;
   setActive: (id: string) => void;
   addMessage: (conversationId: string, message: Message) => void;
+  updateMessage: (
+    conversationId: string,
+    messageId: string,
+    content: string,
+  ) => void;
   updateTitle: (id: string, title: string) => void;
   getActive: () => Conversation | undefined;
 }
@@ -77,6 +82,26 @@ export const useConversationStore = create<ConversationState>()(
                     c.messages.length === 0 && message.role === "user"
                       ? message.content.slice(0, 50)
                       : c.title,
+                }
+              : c,
+          ),
+        }));
+      },
+
+      updateMessage: (
+        conversationId: string,
+        messageId: string,
+        content: string,
+      ) => {
+        set((s) => ({
+          conversations: s.conversations.map((c) =>
+            c.id === conversationId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === messageId ? { ...m, content } : m,
+                  ),
+                  updatedAt: Date.now(),
                 }
               : c,
           ),
