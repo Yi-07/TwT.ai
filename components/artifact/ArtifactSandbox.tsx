@@ -123,9 +123,13 @@ export function ArtifactSandbox({
 
   const handleMessage = useCallback(
     (e: MessageEvent) => {
-      if (!CDN_WHITELIST.some((origin) => e.origin.startsWith(origin.replace(/\/$/, "")))) {
-        if (e.origin !== window.location.origin) return;
-      }
+      const isSrcdoc = e.origin === "null";
+      const isSameOrigin = e.origin === window.location.origin;
+      const isCDN = CDN_WHITELIST.some((origin) =>
+        e.origin.startsWith(origin.replace(/\/$/, "")),
+      );
+      if (!isSrcdoc && !isSameOrigin && !isCDN) return;
+
       if (e.data?.type === "resize" && typeof e.data.height === "number") {
         setContentHeight(e.data.height);
       }
