@@ -85,7 +85,9 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
       const { conversations } = useConversationStore.getState();
       const conv = conversations.find((c) => c.id === cId);
-      const messages = conv?.messages ?? [];
+      const messages = (conv?.messages ?? []).filter(
+        (m) => m.content.trim() !== "",
+      );
 
       send(messages);
     },
