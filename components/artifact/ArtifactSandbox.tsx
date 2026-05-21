@@ -12,14 +12,19 @@ interface ArtifactSandboxProps {
 }
 
 function prepareReactCode(code: string): string {
-  const trimmed = code.trim();
+  // Strip import statements — React/ReactDOM/hooks are already global UMD
+  const noImports = code
+    .split("\n")
+    .filter((line) => !/^\s*import\s/.test(line))
+    .join("\n")
+    .trim();
 
   // Extract the component name from the default export
-  const nameMatch = /export\s+default\s+(?:function\s+)?(\w+)/.exec(trimmed);
+  const nameMatch = /export\s+default\s+(?:function\s+)?(\w+)/.exec(noImports);
   const componentName = nameMatch ? nameMatch[1] : "App";
 
   // Remove "export default " prefix; keep the function/class/identifier
-  const clean = trimmed
+  const clean = noImports
     .replace(/^export\s+default\s+/, "")
     .replace(/^export\s+default\s+/, ""); // double-pass for any edge case
 
