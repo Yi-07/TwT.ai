@@ -1,35 +1,150 @@
 import type { ArtifactType, Segment } from "@/types/artifact";
 
-const ARTIFACT_RE =
-  /<artifact\s+type="(react|html|svg)"\s+title="([^"]*)"\s*>([\s\S]*?)<\/artifact>/g;
+type State = "text" | "tag_open" | "body";
 
-export function parseArtifact(raw: string): Segment[] {
-  const segments: Segment[] = [];
-  let lastIndex = 0;
+class ArtifactParser {
+  private state: State = "text";
+  private segments: Segment[] = [];
+  private textIdx = 0;
+  private artIdx = 0;
 
-  const re = new RegExp(ARTIFACT_RE.source, "g");
+  // Buffers for partial content not yet emitted
+  private textBuf = "";
+  private tagBuf = "";
+  private bodyBuf = "";
+  private tagType = "";
+  private tagTitle = "";
 
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(raw)) !== null) {
-    const before = raw.slice(lastIndex, match.index);
-    if (before) {
-      segments.push({ type: "text", content: before });
+  // Monotonic position tracking
+  private processed = 0;
+
+  parse(raw: string): Segment[] {
+    if (raw.length < this.processed) {
+      this.reset();
     }
 
-    segments.push({
-      type: "artifact",
-      artifactType: match[1] as ArtifactType,
-      title: match[2],
-      content: match[3],
-    });
+    const delta = raw.slice(this.processed);
+    this.processed = raw.length;
 
-    lastIndex = match.index + match[0].length;
+    let i = 0;
+    while (i < delta.length) {
+      if (this.state === "text") {
+        const tagStart = delta.indexOf("<artifact", i);
+        if (tagStart === -1) {
+          this.textBuf += delta.slice(i);
+          break;
+        }
+        if (tagStart > i) {
+          this.textBuf += delta.slice(i, tagStart);
+        }
+        this.flushTextBuf();
+        this.state = "tag_open";
+        this.tagBuf = "<artifact";
+        i = tagStart + "<artifact".length;
+      } else if (this.state === "tag_open") {
+        const tagEnd = delta.indexOf(">", i);
+        if (tagEnd === -1) {
+          this.tagBuf += delta.slice(i);
+          break;
+        }
+        this.tagBuf += delta.slice(i, tagEnd + 1);
+        i = tagEnd + 1;
+
+        const typeMatch = /type="(react|html|svg)"/.exec(this.tagBuf);
+        const titleMatch = /title="([^"]*)"/.exec(this.tagBuf);
+
+        if (typeMatch && titleMatch) {
+          this.tagType = typeMatch[1];
+          this.tagTitle = titleMatch[1];
+          this.state = "body";
+          this.bodyBuf = "";
+        } else {
+          this.textBuf += this.tagBuf;
+          this.state = "text";
+        }
+      } else {
+        // body
+        const closeTag = delta.indexOf("</artifact>", i);
+        if (closeTag === -1) {
+          this.bodyBuf += delta.slice(i);
+          break;
+        }
+        this.bodyBuf += delta.slice(i, closeTag);
+
+        this.segments.push({
+          type: "artifact",
+          id: `artifact-${this.tagType}-${this.artIdx++}`,
+          artifactType: this.tagType as ArtifactType,
+          title: this.tagTitle,
+          content: this.bodyBuf,
+        });
+
+        i = closeTag + "</artifact>".length;
+        this.state = "text";
+      }
+    }
+
+    return this.segments;
   }
 
-  const remainder = raw.slice(lastIndex);
-  if (remainder) {
-    segments.push({ type: "text", content: remainder });
+  /** Call when the stream ends — flush any buffered content as text. */
+  flush(): Segment[] {
+    if (this.state === "tag_open") {
+      this.textBuf += this.tagBuf;
+      this.state = "text";
+    }
+    if (this.state === "body") {
+      this.textBuf += this.bodyBuf;
+      this.state = "text";
+    }
+    this.flushTextBuf();
+    return this.segments;
   }
 
-  return segments;
+  private flushTextBuf() {
+    if (this.textBuf) {
+      this.segments.push({
+        type: "text",
+        id: `text-${this.textIdx++}`,
+        content: this.textBuf,
+      });
+      this.textBuf = "";
+    }
+  }
+
+  private reset() {
+    this.state = "text";
+    this.segments = [];
+    this.textIdx = 0;
+    this.artIdx = 0;
+    this.textBuf = "";
+    this.tagBuf = "";
+    this.bodyBuf = "";
+    this.processed = 0;
+  }
+}
+
+// --- Module-level parser management ---
+
+let currentParser: ArtifactParser | null = null;
+let lastRaw = "";
+
+/**
+ * Parse a (possibly partial) raw string into an ordered array of segments.
+ * Maintains a single parser instance keyed by monotonic prefix growth:
+ * if raw does NOT start with the previous raw, a new parser is created
+ * (handles switching between different messages during rendering).
+ */
+export function parseArtifact(raw: string): Segment[] {
+  if (!raw.startsWith(lastRaw)) {
+    currentParser = new ArtifactParser();
+  }
+  lastRaw = raw;
+  return currentParser!.parse(raw);
+}
+
+/** Flush the current parser — call when streaming ends. */
+export function flushArtifact(): Segment[] {
+  if (!currentParser) return [];
+  return currentParser.flush();
 }

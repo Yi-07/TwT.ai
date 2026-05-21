@@ -7,6 +7,7 @@ interface ArtifactSandboxProps {
   artifactType: ArtifactType;
   title: string;
   content: string;
+  expanded: boolean;
 }
 
 function prepareReactCode(code: string): string {
@@ -92,9 +93,12 @@ export function ArtifactSandbox({
   artifactType,
   title,
   content,
+  expanded,
 }: ArtifactSandboxProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(300);
+  const [contentHeight, setContentHeight] = useState(300);
+
+  const height = expanded ? Math.max(contentHeight, 800) : contentHeight;
 
   const srcdoc = buildSrcdoc(artifactType, content);
 
@@ -104,7 +108,7 @@ export function ArtifactSandbox({
         if (e.origin !== window.location.origin) return;
       }
       if (e.data?.type === "resize" && typeof e.data.height === "number") {
-        setHeight(e.data.height);
+        setContentHeight(e.data.height);
       }
     },
     [],

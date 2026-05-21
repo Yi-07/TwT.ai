@@ -9,15 +9,18 @@ import { parseArtifact } from "@/lib/utils/parseArtifact";
 import { ArtifactSandbox } from "@/components/artifact/ArtifactSandbox";
 import { ArtifactToolbar } from "@/components/artifact/ArtifactToolbar";
 
-interface MessageBubbleProps {
-  message: Message;
-}
+// --- Independent module-level component (not defined inside MessageBubble) ---
 
 function SegmentRenderer({ seg }: { seg: Segment }) {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [expanded, setExpanded] = useState(false);
 
   const handleRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleToggleExpand = useCallback(() => {
+    setExpanded((prev) => !prev);
   }, []);
 
   if (seg.type === "text") {
@@ -32,15 +35,27 @@ function SegmentRenderer({ seg }: { seg: Segment }) {
 
   return (
     <div className="my-3">
-      <ArtifactToolbar title={seg.title} onRefresh={handleRefresh} />
+      <ArtifactToolbar
+        title={seg.title}
+        expanded={expanded}
+        onRefresh={handleRefresh}
+        onToggleExpand={handleToggleExpand}
+      />
       <ArtifactSandbox
         key={refreshKey}
         artifactType={seg.artifactType}
         title={seg.title}
         content={seg.content}
+        expanded={expanded}
       />
     </div>
   );
+}
+
+// --- MessageBubble ---
+
+interface MessageBubbleProps {
+  message: Message;
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
@@ -63,8 +78,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            {parseArtifact(message.content).map((seg, i) => (
-              <SegmentRenderer key={i} seg={seg} />
+            {parseArtifact(message.content).map((seg) => (
+              <SegmentRenderer key={seg.id} seg={seg} />
             ))}
           </div>
         )}
