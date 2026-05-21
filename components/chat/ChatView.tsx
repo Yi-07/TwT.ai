@@ -94,6 +94,13 @@ export function ChatView({ conversationId }: ChatViewProps) {
     handleSend(content);
   }, [handleSend]);
 
+  const handleSendPrompt = useCallback(
+    (text: string) => {
+      handleSend(text);
+    },
+    [handleSend],
+  );
+
   const allMessages = active?.messages ?? [];
   const showRetry =
     !isStreaming && (error || contentRef.current === "") && lastUserMessageRef.current;
@@ -135,6 +142,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
           }
           isStreaming={isStreaming}
           isSlow={isSlowResponse}
+          onSendPrompt={handleSendPrompt}
         />
 
         {/* Error / retry banner */}

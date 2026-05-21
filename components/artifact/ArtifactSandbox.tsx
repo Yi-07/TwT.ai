@@ -8,6 +8,7 @@ interface ArtifactSandboxProps {
   title: string;
   content: string;
   expanded: boolean;
+  onSendPrompt?: (text: string) => void;
 }
 
 function prepareReactCode(code: string): string {
@@ -28,6 +29,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 );`;
 }
 
+const SENDPROMPT_SCRIPT =
+  "<script>window.sendPrompt=function(t){window.parent.postMessage({type:'sendPrompt',text:t},'*')}<\\/script>";
+
 const CDN_WHITELIST = [
   "https://unpkg.com/",
   "https://cdn.jsdelivr.net/",
@@ -37,13 +41,16 @@ const CDN_WHITELIST = [
 function buildSrcdoc(type: ArtifactType, code: string): string {
   switch (type) {
     case "html":
-      return code;
+      return code.replace(
+        /<body[^>]*>/i,
+        (match) => `${match}${SENDPROMPT_SCRIPT}`,
+      );
 
     case "svg":
       return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;}</style></head>
-<body>${code}</body>
+<body>${SENDPROMPT_SCRIPT}${code}</body>
 </html>`;
 
     case "react": {
@@ -52,6 +59,7 @@ function buildSrcdoc(type: ArtifactType, code: string): string {
 <html>
 <head>
 <meta charset="utf-8" />
+${SENDPROMPT_SCRIPT}
 <script src="https://unpkg.com/react@18/umd/react.development.min.js" ><\/script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.min.js" ><\/script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js" ><\/script>
@@ -94,6 +102,7 @@ export function ArtifactSandbox({
   title,
   content,
   expanded,
+  onSendPrompt,
 }: ArtifactSandboxProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [contentHeight, setContentHeight] = useState(300);
@@ -110,8 +119,11 @@ export function ArtifactSandbox({
       if (e.data?.type === "resize" && typeof e.data.height === "number") {
         setContentHeight(e.data.height);
       }
+      if (e.data?.type === "sendPrompt" && typeof e.data.text === "string") {
+        onSendPrompt?.(e.data.text);
+      }
     },
-    [],
+    [onSendPrompt],
   );
 
   useEffect(() => {

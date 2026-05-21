@@ -11,7 +11,12 @@ import { ArtifactToolbar } from "@/components/artifact/ArtifactToolbar";
 
 // --- Independent module-level component (not defined inside MessageBubble) ---
 
-function SegmentRenderer({ seg }: { seg: Segment }) {
+interface SegmentRendererProps {
+  seg: Segment;
+  onSendPrompt?: (text: string) => void;
+}
+
+function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
@@ -47,6 +52,7 @@ function SegmentRenderer({ seg }: { seg: Segment }) {
         title={seg.title}
         content={seg.content}
         expanded={expanded}
+        onSendPrompt={onSendPrompt}
       />
     </div>
   );
@@ -56,9 +62,10 @@ function SegmentRenderer({ seg }: { seg: Segment }) {
 
 interface MessageBubbleProps {
   message: Message;
+  onSendPrompt?: (text: string) => void;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   return (
@@ -79,7 +86,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         ) : (
           <div className="flex flex-col gap-2">
             {parseArtifact(message.content).map((seg) => (
-              <SegmentRenderer key={seg.id} seg={seg} />
+              <SegmentRenderer key={seg.id} seg={seg} onSendPrompt={onSendPrompt} />
             ))}
           </div>
         )}

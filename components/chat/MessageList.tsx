@@ -9,9 +9,15 @@ interface MessageListProps {
   messages: Message[];
   isStreaming: boolean;
   isSlow: boolean;
+  onSendPrompt?: (text: string) => void;
 }
 
-export function MessageList({ messages, isStreaming, isSlow }: MessageListProps) {
+export function MessageList({
+  messages,
+  isStreaming,
+  isSlow,
+  onSendPrompt,
+}: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +51,7 @@ export function MessageList({ messages, isStreaming, isSlow }: MessageListProps)
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageBubble key={msg.id} message={msg} onSendPrompt={onSendPrompt} />
         ))}
         {isStreaming && <StreamingIndicator isSlow={isSlow} />}
         <div ref={bottomRef} />
