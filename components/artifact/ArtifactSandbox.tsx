@@ -11,6 +11,9 @@ interface ArtifactSandboxProps {
   onSendPrompt?: (text: string) => void;
 }
 
+const REACT_HOOKS_INJECTION =
+  "const { useState, useEffect, useRef, useMemo, useCallback, useReducer, useContext, useId } = React;";
+
 function prepareReactCode(code: string): string {
   // Strip import and export statements — React/ReactDOM/hooks are global UMD,
   // and Babel Standalone runs in non-module mode where export is a syntax error.
@@ -28,7 +31,9 @@ function prepareReactCode(code: string): string {
   const nameMatch = /(?:function|class)\s+(\w+)/.exec(noModule);
   const componentName = nameMatch ? nameMatch[1] : "App";
 
-  return `${noModule}
+  // Auto-inject hook destructuring so models can use bare hook calls
+  return `${REACT_HOOKS_INJECTION}
+${noModule}
 ReactDOM.createRoot(document.getElementById('root')).render(
   React.createElement(${componentName})
 );`;
