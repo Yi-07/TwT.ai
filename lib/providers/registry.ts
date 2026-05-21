@@ -6,6 +6,7 @@ export interface ProviderMeta {
 const providerMetaList: ProviderMeta[] = [
   { id: "claude", name: "Claude" },
   { id: "deepseek", name: "DeepSeek" },
+  { id: "modelscope", name: "ModelScope" },
 ];
 
 export function getProviderMetas(): ProviderMeta[] {

@@ -381,6 +381,8 @@ ANTHROPIC_API_KEY=      # Claude (Anthropic)
 CLAUDE_MODEL=           # Claude model version (e.g. claude-sonnet-4-6)
 DEEPSEEK_API_KEY=       # DeepSeek
 DEEPSEEK_MODEL=         # DeepSeek model version (e.g. deepseek-chat)
+DASHSCOPE_API_KEY=      # ModelScope (Alibaba Cloud DashScope)
+MODELSCOPE_MODEL=       # ModelScope model version (e.g. qwen-plus)
 # Future providers: add key here + register in /lib/providers/index.ts and /lib/providers/registry.ts
 NEXT_PUBLIC_DEFAULT_PROVIDER=  # Default AI provider when no conversation exists (claude | deepseek)
 NEXT_PUBLIC_APP_URL=           # e.g. http://localhost:3000

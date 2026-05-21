@@ -1,6 +1,7 @@
 import type { ModelProvider } from "@/types/provider";
 import { ClaudeProvider } from "./claude";
 import { DeepSeekProvider } from "./deepseek";
+import { ModelScopeProvider } from "./modelscope";
 import { type ProviderMeta, getProviderMetas } from "./registry";
 
 const providerConstructors: Record<
@@ -9,6 +10,7 @@ const providerConstructors: Record<
 > = {
   claude: ClaudeProvider,
   deepseek: DeepSeekProvider,
+  modelscope: ModelScopeProvider,
 };
 
 export { type ProviderMeta, getProviderMetas };
