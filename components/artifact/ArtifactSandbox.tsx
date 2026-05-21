@@ -12,23 +12,23 @@ interface ArtifactSandboxProps {
 }
 
 function prepareReactCode(code: string): string {
-  // Strip import statements — React/ReactDOM/hooks are already global UMD
-  const noImports = code
+  // Strip import and export statements — React/ReactDOM/hooks are global UMD,
+  // and Babel Standalone runs in non-module mode where export is a syntax error.
+  const noModule = code
     .split("\n")
     .filter((line) => !/^\s*import\s/.test(line))
     .join("\n")
+    // Remove export { ... } re-exports entirely
+    .replace(/^\s*export\s*\{[^}]*\}\s*;?\s*$/gm, "")
+    // Strip "export default" / "export" keyword, keep the declaration
+    .replace(/^\s*export\s+(default\s+)?/gm, "")
     .trim();
 
   // Extract the component name from the default export
-  const nameMatch = /export\s+default\s+(?:function\s+)?(\w+)/.exec(noImports);
+  const nameMatch = /(?:function|class)\s+(\w+)/.exec(noModule);
   const componentName = nameMatch ? nameMatch[1] : "App";
 
-  // Remove "export default " prefix; keep the function/class/identifier
-  const clean = noImports
-    .replace(/^export\s+default\s+/, "")
-    .replace(/^export\s+default\s+/, ""); // double-pass for any edge case
-
-  return `${clean}
+  return `${noModule}
 ReactDOM.createRoot(document.getElementById('root')).render(
   React.createElement(${componentName})
 );`;
