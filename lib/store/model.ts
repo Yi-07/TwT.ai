@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { ModelOptions } from "@/types/provider";
 import { getDefaultModel } from "@/lib/providers/registry";
 
@@ -7,23 +8,36 @@ interface ModelState {
   modelSettings: Record<string, ModelOptions>;
 
   setActiveModel: (id: string) => void;
-  updateModelSettings: (modelId: string, settings: Partial<ModelOptions>) => void;
+  updateModelSettings: (
+    modelId: string,
+    settings: Partial<ModelOptions>,
+  ) => void;
 }
 
-export const useModelStore = create<ModelState>()((set) => ({
-  activeModelId: getDefaultModel(),
-  modelSettings: {},
+export const useModelStore = create<ModelState>()(
+  persist(
+    (set) => ({
+      activeModelId: getDefaultModel(),
+      modelSettings: {},
 
-  setActiveModel: (id: string) => {
-    set({ activeModelId: id });
-  },
-
-  updateModelSettings: (modelId: string, settings: Partial<ModelOptions>) => {
-    set((s) => ({
-      modelSettings: {
-        ...s.modelSettings,
-        [modelId]: { ...s.modelSettings[modelId], ...settings },
+      setActiveModel: (id: string) => {
+        set({ activeModelId: id });
       },
-    }));
-  },
-}));
+
+      updateModelSettings: (
+        modelId: string,
+        settings: Partial<ModelOptions>,
+      ) => {
+        set((s) => ({
+          modelSettings: {
+            ...s.modelSettings,
+            [modelId]: { ...s.modelSettings[modelId], ...settings },
+          },
+        }));
+      },
+    }),
+    {
+      name: "twt-model",
+    },
+  ),
+);
