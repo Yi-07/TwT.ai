@@ -63,10 +63,10 @@ export function ChatView({ conversationId }: ChatViewProps) {
   useEffect(() => {
     const msgId = assistantMsgIdRef.current;
     const cId = activeId;
-    if (isStreaming && msgId && cId && cId !== "new") {
+    if (msgId && cId && cId !== "new") {
       updateAssistantMessage(cId, msgId, rawContent);
     }
-  }, [rawContent, isStreaming, activeId, updateAssistantMessage]);
+  }, [rawContent, activeId, updateAssistantMessage]);
 
   const handleSend = useCallback(
     (content: string) => {
