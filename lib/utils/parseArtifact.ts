@@ -136,11 +136,11 @@ let lastRaw = "";
  * (handles switching between different messages during rendering).
  */
 export function parseArtifact(raw: string): Segment[] {
-  if (!raw.startsWith(lastRaw)) {
+  if (!currentParser || !raw.startsWith(lastRaw)) {
     currentParser = new ArtifactParser();
   }
   lastRaw = raw;
-  return currentParser!.parse(raw);
+  return currentParser.parse(raw);
 }
 
 /** Flush the current parser — call when streaming ends. */
