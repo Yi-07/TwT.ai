@@ -35,7 +35,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 }
 
 const SENDPROMPT_SCRIPT =
-  "<script>window.sendPrompt=function(t){window.parent.postMessage({type:'sendPrompt',text:t},'*')}<\\/script>";
+  "<script>window.sendPrompt=function(t){window.parent.postMessage({type:'sendPrompt',text:t},'*')}<\/script>";
 
 const CDN_WHITELIST = [
   "https://unpkg.com/",
@@ -77,7 +77,7 @@ ${SENDPROMPT_SCRIPT}
 <script>
   window.onerror = function(msg, src, line, col, err) {
     var el = document.getElementById('err');
-    if (el) { el.style.display='block'; el.textContent = 'Error: ' + msg + '\\\nn at line ' + line; }
+    if (el) { el.style.display='block'; el.textContent = 'Error: ' + msg + '\\n at line ' + line; }
   };
 <\/script>
 </head>
