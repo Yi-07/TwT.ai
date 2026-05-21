@@ -8,9 +8,10 @@ import { StreamingIndicator } from "./StreamingIndicator";
 interface MessageListProps {
   messages: Message[];
   isStreaming: boolean;
+  isSlow: boolean;
 }
 
-export function MessageList({ messages, isStreaming }: MessageListProps) {
+export function MessageList({ messages, isStreaming, isSlow }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +47,7 @@ export function MessageList({ messages, isStreaming }: MessageListProps) {
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
-        {isStreaming && <StreamingIndicator />}
+        {isStreaming && <StreamingIndicator isSlow={isSlow} />}
         <div ref={bottomRef} />
       </div>
     </div>

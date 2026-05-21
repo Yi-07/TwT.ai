@@ -4,10 +4,11 @@ import { useState, useRef, useCallback, type KeyboardEvent } from "react";
 
 interface InputBarProps {
   onSend: (content: string) => void;
+  onStop: () => void;
   isStreaming: boolean;
 }
 
-export function InputBar({ onSend, isStreaming }: InputBarProps) {
+export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -32,10 +33,12 @@ export function InputBar({ onSend, isStreaming }: InputBarProps) {
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        handleSend();
+        if (!isStreaming) {
+          handleSend();
+        }
       }
     },
-    [handleSend],
+    [handleSend, isStreaming],
   );
 
   return (
@@ -51,29 +54,46 @@ export function InputBar({ onSend, isStreaming }: InputBarProps) {
           onKeyDown={handleKeyDown}
           placeholder="Send a message..."
           rows={1}
-          disabled={isStreaming}
-          className="flex-1 resize-none rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[15px] leading-relaxed placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
+          className="flex-1 resize-none rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[15px] leading-relaxed placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
         />
-        <button
-          onClick={handleSend}
-          disabled={!value.trim() || isStreaming}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-zinc-100 dark:text-black dark:hover:bg-zinc-300"
-          aria-label="Send message"
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+
+        {isStreaming ? (
+          <button
+            onClick={onStop}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-colors hover:bg-red-600 dark:bg-zinc-100 dark:text-black dark:hover:bg-red-500 dark:hover:text-white"
+            aria-label="Stop generating"
           >
-            <path d="M22 2L11 13" />
-            <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-          </svg>
-        </button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            onClick={handleSend}
+            disabled={!value.trim()}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-zinc-100 dark:text-black dark:hover:bg-zinc-300"
+            aria-label="Send message"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M22 2L11 13" />
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );

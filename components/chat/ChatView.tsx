@@ -31,10 +31,13 @@ export function ChatView({ conversationId }: ChatViewProps) {
   const activeModelId = useModelStore((s) => s.activeModelId);
   const settings = useModelStore((s) => s.modelSettings[activeModelId]);
 
-  const { rawContent, isStreaming, error, send, abort } = useStream({
-    providerId: activeModelId,
-    modelOptions: settings,
-  });
+  const { rawContent, isStreaming, isSlowResponse, error, send, abort } =
+    useStream({
+      providerId: activeModelId,
+      modelOptions: settings,
+    });
+
+  const lastUserMessageRef = useRef<string>("");
 
   // Handle "new" conversation: create one and redirect
   useEffect(() => {
@@ -69,6 +72,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const handleSend = useCallback(
     (content: string) => {
+      lastUserMessageRef.current = content;
+
       const cId = sendMessage(content);
       if (cId !== activeId) {
         router.replace(`/c/${cId}`);
@@ -83,7 +88,15 @@ export function ChatView({ conversationId }: ChatViewProps) {
     [sendMessage, activeId, send, router],
   );
 
+  const handleRetry = useCallback(() => {
+    const content = lastUserMessageRef.current;
+    if (!content) return;
+    handleSend(content);
+  }, [handleSend]);
+
   const allMessages = active?.messages ?? [];
+  const showRetry =
+    !isStreaming && (error || contentRef.current === "") && lastUserMessageRef.current;
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-black">
@@ -121,23 +134,37 @@ export function ChatView({ conversationId }: ChatViewProps) {
               : allMessages
           }
           isStreaming={isStreaming}
+          isSlow={isSlowResponse}
         />
 
-        {/* Error banner */}
+        {/* Error / retry banner */}
         {error && (
           <div className="mx-auto mb-2 w-full max-w-3xl rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
             {error}
+            <button onClick={handleRetry} className="ml-2 underline font-medium">
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Retry after cancel */}
+        {showRetry && !error && (
+          <div className="mx-auto mb-2 w-full max-w-3xl px-4">
             <button
-              onClick={() => abort()}
-              className="ml-2 underline"
+              onClick={handleRetry}
+              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
             >
-              Dismiss
+              Retry
             </button>
           </div>
         )}
 
         {/* Input */}
-        <InputBar onSend={handleSend} isStreaming={isStreaming} />
+        <InputBar
+          onSend={handleSend}
+          onStop={abort}
+          isStreaming={isStreaming}
+        />
       </div>
     </div>
   );
