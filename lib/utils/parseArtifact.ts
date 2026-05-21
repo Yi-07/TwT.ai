@@ -15,6 +15,9 @@ class ArtifactParser {
   private tagType = "";
   private tagTitle = "";
 
+  // Track placeholder so it can be replaced when </artifact> arrives
+  private placeholderIndex = -1;
+
   // Monotonic position tracking
   private processed = 0;
 
@@ -58,6 +61,14 @@ class ArtifactParser {
           this.tagTitle = titleMatch[1];
           this.state = "body";
           this.bodyBuf = "";
+          // Emit placeholder on first body content so the user sees
+          // a loading indicator instead of a blank page.
+          this.placeholderIndex = this.segments.length;
+          this.segments.push({
+            type: "text",
+            id: `placeholder-${this.artIdx}`,
+            content: `> 正在生成「${this.tagTitle}」...`,
+          });
         } else {
           this.textBuf += this.tagBuf;
           this.state = "text";
@@ -71,13 +82,26 @@ class ArtifactParser {
         }
         this.bodyBuf += delta.slice(i, closeTag);
 
-        this.segments.push({
+        // Replace placeholder with the completed artifact
+        const artifactSeg: Segment = {
           type: "artifact",
           id: `artifact-${this.tagType}-${this.artIdx++}`,
           artifactType: this.tagType as ArtifactType,
           title: this.tagTitle,
           content: this.bodyBuf,
-        });
+        };
+
+        if (this.placeholderIndex >= 0) {
+          // Create a new array so React detects the structural change
+          this.segments = [
+            ...this.segments.slice(0, this.placeholderIndex),
+            artifactSeg,
+            ...this.segments.slice(this.placeholderIndex + 1),
+          ];
+          this.placeholderIndex = -1;
+        } else {
+          this.segments.push(artifactSeg);
+        }
 
         i = closeTag + "</artifact>".length;
         this.state = "text";
@@ -94,7 +118,21 @@ class ArtifactParser {
       this.state = "text";
     }
     if (this.state === "body") {
-      this.textBuf += this.bodyBuf;
+      // Replace placeholder with the body content as a code block
+      if (this.placeholderIndex >= 0) {
+        const bodyText = this.bodyBuf || "(empty artifact)";
+        const textSeg: Segment = {
+          type: "text",
+          id: `text-${this.textIdx++}`,
+          content: "```\n" + bodyText + "\n```",
+        };
+        this.segments = [
+          ...this.segments.slice(0, this.placeholderIndex),
+          textSeg,
+          ...this.segments.slice(this.placeholderIndex + 1),
+        ];
+        this.placeholderIndex = -1;
+      }
       this.state = "text";
     }
     this.flushTextBuf();
@@ -120,6 +158,7 @@ class ArtifactParser {
     this.textBuf = "";
     this.tagBuf = "";
     this.bodyBuf = "";
+    this.placeholderIndex = -1;
     this.processed = 0;
   }
 }
