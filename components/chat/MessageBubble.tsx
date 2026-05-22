@@ -54,7 +54,7 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
   }
 
   return (
-    <div className="my-3">
+    <div className="mt-4 border-l-2 border-hairline pl-3 dark:border-hairline">
       <ArtifactToolbar
         title={seg.title}
         expanded={expanded}

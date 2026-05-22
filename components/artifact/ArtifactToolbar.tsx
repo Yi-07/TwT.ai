@@ -14,19 +14,19 @@ export function ArtifactToolbar({
   onToggleExpand,
 }: ArtifactToolbarProps) {
   return (
-    <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-hairline bg-canvas-card px-4 py-2 dark:border-hairline dark:bg-surface-dark-elevated">
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-muted dark:text-on-dark-soft">
+    <div className="flex items-center gap-1.5 px-1 py-1">
+      <span className="min-w-0 flex-1 truncate text-xs text-muted dark:text-on-dark-soft">
         {title}
       </span>
 
       <button
         onClick={onRefresh}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+        className="flex h-6 w-6 items-center justify-center rounded text-muted-soft opacity-40 transition-opacity hover:opacity-100 hover:text-muted dark:hover:text-on-dark-soft"
         aria-label="Refresh artifact"
       >
         <svg
-          width="14"
-          height="14"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -40,12 +40,12 @@ export function ArtifactToolbar({
 
       <button
         onClick={onToggleExpand}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+        className="flex h-6 w-6 items-center justify-center rounded text-muted-soft opacity-40 transition-opacity hover:opacity-100 hover:text-muted dark:hover:text-on-dark-soft"
         aria-label={expanded ? "Collapse artifact" : "Expand artifact"}
       >
         <svg
-          width="14"
-          height="14"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
