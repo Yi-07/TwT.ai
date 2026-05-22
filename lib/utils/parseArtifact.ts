@@ -53,12 +53,17 @@ export class ArtifactParser {
         this.tagBuf += delta.slice(i, tagEnd + 1);
         i = tagEnd + 1;
 
-        const typeMatch = /type="(react|html|svg)"/.exec(this.tagBuf);
-        const titleMatch = /title="([^"]*)"/.exec(this.tagBuf);
+        // Lenient matching — handles single/double/no quotes, any attribute order
+        const typeMatch =
+          /type\s*=\s*(?:"(react|html|svg)"|'(react|html|svg)'|(react|html|svg))/.exec(
+            this.tagBuf,
+          );
+        const titleMatch =
+          /title\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+))/.exec(this.tagBuf);
 
         if (typeMatch && titleMatch) {
-          this.tagType = typeMatch[1];
-          this.tagTitle = titleMatch[1];
+          this.tagType = (typeMatch[1] || typeMatch[2] || typeMatch[3]) as string;
+          this.tagTitle = titleMatch[1] || titleMatch[2] || titleMatch[3] || "";
           this.state = "body";
           this.bodyBuf = "";
           this.placeholderIndex = this.segments.length;
@@ -182,11 +187,17 @@ let lastRaw = "";
  * (handles switching between different messages during rendering).
  */
 export function parseArtifact(raw: string): Segment[] {
-  if (!currentParser || !raw.startsWith(lastRaw)) {
+  // Strip surrounding markdown code fences so models that wrap
+  // artifact tags in ``` still produce correct segments.
+  const cleaned = raw
+    .replace(/^```[\w]*\s*\n/, "")
+    .replace(/\n```\s*$/, "");
+
+  if (!currentParser || !cleaned.startsWith(lastRaw)) {
     currentParser = new ArtifactParser();
   }
-  lastRaw = raw;
-  return currentParser.parse(raw);
+  lastRaw = cleaned;
+  return currentParser.parse(cleaned);
 }
 
 /** Flush the current parser — call when streaming ends. */
