@@ -46,23 +46,20 @@ export function ChatView({ conversationId }: ChatViewProps) {
     if (typeof window === "undefined") return false;
     return window.innerWidth < 1024;
   });
-  const preNarrowOpen = useRef(true);
+  const userToggled = useRef(false);
 
-  // Track narrow window for overlay vs inline sidebar
+  const toggleSidebar = useCallback(() => {
+    userToggled.current = true;
+    setSidebarOpen((v) => !v);
+  }, []);
+
+  // Auto-manage sidebar on resize, but only if user never manually toggled
   useEffect(() => {
     const onResize = () => {
+      if (userToggled.current) return;
       const narrow = window.innerWidth < 1024;
       setIsNarrow(narrow);
-      if (narrow) {
-        // Save current state, force close for overlay
-        setSidebarOpen((v) => {
-          preNarrowOpen.current = v;
-          return false;
-        });
-      } else {
-        // Restore to pre-narrow state
-        setSidebarOpen(preNarrowOpen.current);
-      }
+      setSidebarOpen(!narrow);
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -195,7 +192,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-4 dark:border-hairline">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSidebarOpen((v) => !v)}
+              onClick={toggleSidebar}
               className="flex h-7 w-7 items-center justify-center rounded text-muted-soft opacity-50 transition-opacity hover:opacity-100"
               aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
             >
