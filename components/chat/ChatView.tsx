@@ -38,7 +38,17 @@ export function ChatView({ conversationId }: ChatViewProps) {
       modelOptions: settings,
     });
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.innerWidth >= 1024;
+  });
+
+  // Auto-collapse sidebar when window narrows (e.g. DevTools opens)
+  useEffect(() => {
+    const onResize = () => setSidebarOpen(window.innerWidth >= 1024);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const lastUserMessageRef = useRef<string>("");
   const assistantMsgIdRef = useRef<string>("");
