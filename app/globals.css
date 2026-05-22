@@ -49,6 +49,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #181715;
+    --foreground: #faf9f5;
+    --color-canvas: #181715;
+    --color-canvas-soft: #201d1a;
+    --color-canvas-card: #282420;
+    --color-user-bubble: #3a3530;
+    --color-hairline: #302c28;
+    --color-body: #a09d96;
+    --color-muted: #8e8b82;
+    --color-muted-soft: #6c6a64;
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
