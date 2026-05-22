@@ -75,6 +75,7 @@ ${SENDPROMPT_SCRIPT}
 <script src="/vendor/react.umd.js"><\/script>
 <script src="/vendor/react-dom.umd.js"><\/script>
 <script src="/vendor/babel.min.js"><\/script>
+<script src="/vendor/prop-types.umd.js"><\/script>
 <script src="/vendor/recharts.umd.js"><\/script>
 <script src="/vendor/lodash.umd.js"><\/script>
 <style>
