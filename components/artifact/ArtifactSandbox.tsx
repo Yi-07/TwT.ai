@@ -20,6 +20,8 @@ function prepareReactCode(code: string): string {
   const noModule = code
     .split("\n")
     .filter((line) => !/^\s*import\s/.test(line))
+    // Remove model-generated hook destructure — we inject our own below
+    .filter((line) => !/^\s*const\s*\{[^}]*\}\s*=\s*React\s*;?\s*$/.test(line.trim()))
     .join("\n")
     // Remove export { ... } re-exports entirely
     .replace(/^\s*export\s*\{[^}]*\}\s*;?\s*$/gm, "")
