@@ -48,7 +48,7 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
   );
 
   return (
-    <div className="shrink-0 border-t border-hairline bg-canvas-soft dark:border-hairline dark:bg-surface-dark">
+    <div className="shrink-0">
       <div className="mx-auto flex max-w-3xl items-end gap-3 px-4 py-4">
         <textarea
           ref={textareaRef}
@@ -60,7 +60,7 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
           onKeyDown={handleKeyDown}
           placeholder="Send a message..."
           rows={1}
-          className="flex-1 resize-none rounded-2xl border border-hairline bg-canvas px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark dark:placeholder:text-on-dark-soft dark:focus:border-primary"
+          className="flex-1 resize-none rounded-2xl border border-hairline bg-transparent px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:text-on-dark dark:placeholder:text-on-dark-soft dark:focus:border-primary"
         />
 
         {isStreaming ? (
