@@ -38,6 +38,21 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
     );
   }
 
+  if (seg.type === "placeholder") {
+    return (
+      <div className="my-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
+        <span className="text-sm text-amber-700 dark:text-amber-300">
+          正在生成「{seg.title}」
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce [animation-delay:0ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce [animation-delay:150ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce [animation-delay:300ms]" />
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="my-3">
       <ArtifactToolbar

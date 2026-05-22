@@ -65,9 +65,9 @@ class ArtifactParser {
           // a loading indicator instead of a blank page.
           this.placeholderIndex = this.segments.length;
           this.segments.push({
-            type: "text",
+            type: "placeholder",
             id: `placeholder-${this.artIdx}`,
-            content: `> 正在生成「${this.tagTitle}」...`,
+            title: this.tagTitle,
           });
         } else {
           this.textBuf += this.tagBuf;
