@@ -91,7 +91,7 @@ ${SENDPROMPT_SCRIPT}
 <body>
 <div id="root"></div>
 <pre id="err"></pre>
-<script type="text/babel" data-presets="react">
+<script type="text/babel">
 ${prepared}
 <\/script>
 <script>
