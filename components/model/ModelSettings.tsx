@@ -25,7 +25,7 @@ export function ModelSettings() {
     <div>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-body transition-colors hover:bg-canvas-soft dark:text-on-dark dark:hover:bg-surface-dark-elevated"
       >
         <svg
           width="16"
@@ -44,9 +44,9 @@ export function ModelSettings() {
       </button>
 
       {open && (
-        <div className="absolute right-4 top-12 z-50 w-80 rounded-xl border border-zinc-200 bg-white p-5 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="absolute right-4 top-12 z-50 w-80 rounded-xl border border-hairline bg-canvas p-5 shadow-lg dark:border-hairline dark:bg-surface-dark">
           <div className="mb-4">
-            <label className="mb-1.5 block text-xs font-medium text-zinc-500">
+            <label className="mb-1.5 block text-xs font-medium text-muted">
               Temperature: {temperature.toFixed(1)}
             </label>
             <input
@@ -56,16 +56,16 @@ export function ModelSettings() {
               step="0.1"
               value={temperature}
               onChange={(e) => update({ temperature: parseFloat(e.target.value) })}
-              className="w-full accent-zinc-900 dark:accent-zinc-100"
+              className="w-full accent-primary"
             />
-            <div className="mt-0.5 flex justify-between text-[10px] text-zinc-400">
+            <div className="mt-0.5 flex justify-between text-[10px] text-muted-soft">
               <span>Precise</span>
               <span>Creative</span>
             </div>
           </div>
 
           <div className="mb-4">
-            <label className="mb-1.5 block text-xs font-medium text-zinc-500">
+            <label className="mb-1.5 block text-xs font-medium text-muted">
               Max tokens
             </label>
             <input
@@ -76,12 +76,12 @@ export function ModelSettings() {
               onChange={(e) =>
                 update({ maxTokens: parseInt(e.target.value, 10) || 4096 })
               }
-              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800"
+              className="w-full rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-zinc-500">
+            <label className="mb-1.5 block text-xs font-medium text-muted">
               System prompt
             </label>
             <textarea
@@ -89,7 +89,7 @@ export function ModelSettings() {
               value={systemPrompt}
               onChange={(e) => update({ systemPrompt: e.target.value })}
               placeholder="Optional system instructions..."
-              className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:placeholder:text-zinc-500"
+              className="w-full resize-none rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark dark:placeholder:text-on-dark-soft"
             />
           </div>
         </div>

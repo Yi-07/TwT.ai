@@ -42,12 +42,12 @@ export function ConversationItem({
       }}
       className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors cursor-pointer ${
         isActive
-          ? "bg-zinc-200/70 dark:bg-zinc-800"
-          : "hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+          ? "bg-canvas-card dark:bg-surface-dark-elevated"
+          : "hover:bg-canvas-soft dark:hover:bg-surface-dark-elevated/60"
       }`}
     >
-      <span className="min-w-0 flex-1 truncate">{conversation.title}</span>
-      <span className="shrink-0 text-[11px] text-zinc-400 opacity-0 transition-opacity group-hover:opacity-60">
+      <span className="min-w-0 flex-1 truncate text-body dark:text-on-dark">{conversation.title}</span>
+      <span className="shrink-0 text-[11px] text-muted-soft opacity-0 transition-opacity group-hover:opacity-60">
         {relativeTime(conversation.updatedAt)}
       </span>
       <button
@@ -55,7 +55,7 @@ export function ConversationItem({
           e.stopPropagation();
           onDelete(conversation.id);
         }}
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded opacity-0 transition-opacity hover:bg-zinc-200 group-hover:opacity-100 dark:hover:bg-zinc-700"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded opacity-0 transition-opacity hover:bg-canvas-card group-hover:opacity-100 dark:hover:bg-surface-dark-elevated"
         aria-label={`Delete ${conversation.title}`}
       >
         <svg

@@ -14,8 +14,8 @@ export function ArtifactToolbar({
   onToggleExpand,
 }: ArtifactToolbarProps) {
   return (
-    <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-zinc-200 bg-zinc-50 px-4 py-2 dark:border-zinc-700 dark:bg-zinc-900">
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-600 dark:text-zinc-400">
+    <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-hairline bg-canvas-card px-4 py-2 dark:border-hairline dark:bg-surface-dark-elevated">
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-muted dark:text-on-dark-soft">
         {title}
       </span>
 

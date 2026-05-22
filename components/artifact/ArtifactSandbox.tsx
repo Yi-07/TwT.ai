@@ -153,7 +153,7 @@ export function ArtifactSandbox({
       sandbox="allow-scripts"
       srcDoc={srcdoc}
       title={title}
-      className="w-full rounded-b-lg border border-zinc-200 dark:border-zinc-700"
+      className="w-full rounded-b-lg border border-hairline dark:border-hairline"
       style={{ height, borderTop: "none" }}
     />
   );

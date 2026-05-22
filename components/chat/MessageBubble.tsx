@@ -40,14 +40,14 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
 
   if (seg.type === "placeholder") {
     return (
-      <div className="my-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
-        <span className="text-sm text-amber-700 dark:text-amber-300">
+      <div className="my-3 flex items-center gap-2 rounded-lg border border-hairline bg-canvas-card px-4 py-3 dark:border-hairline dark:bg-surface-dark-elevated">
+        <span className="text-sm text-muted dark:text-on-dark-soft">
           正在生成「{seg.title}」
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce [animation-delay:0ms]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce [animation-delay:150ms]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce [animation-delay:300ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
         </span>
       </div>
     );
@@ -90,7 +90,7 @@ export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
       <div
         className={
           isUser
-            ? "max-w-[80%] rounded-2xl rounded-br-md bg-zinc-900 px-5 py-3 text-zinc-50"
+            ? "max-w-[80%] rounded-2xl rounded-br-md bg-primary px-5 py-3 text-white"
             : "w-full max-w-3xl px-4 py-2"
         }
       >

@@ -42,7 +42,7 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
   );
 
   return (
-    <div className="shrink-0 border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
+    <div className="shrink-0 border-t border-hairline bg-canvas-soft dark:border-hairline dark:bg-surface-dark">
       <div className="mx-auto flex max-w-3xl items-end gap-3 px-4 py-4">
         <textarea
           ref={textareaRef}
@@ -54,13 +54,13 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
           onKeyDown={handleKeyDown}
           placeholder="Send a message..."
           rows={1}
-          className="flex-1 resize-none rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[15px] leading-relaxed placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500"
+          className="flex-1 resize-none rounded-2xl border border-hairline bg-canvas px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark dark:placeholder:text-on-dark-soft dark:focus:border-primary"
         />
 
         {isStreaming ? (
           <button
             onClick={onStop}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-colors hover:bg-red-600 dark:bg-zinc-100 dark:text-black dark:hover:bg-red-500 dark:hover:text-white"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-dark text-on-dark transition-colors hover:bg-red-600 hover:text-white dark:bg-on-dark dark:text-surface-dark dark:hover:bg-red-500 dark:hover:text-white"
             aria-label="Stop generating"
           >
             <svg
@@ -76,7 +76,7 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
           <button
             onClick={handleSend}
             disabled={!value.trim()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-zinc-100 dark:text-black dark:hover:bg-zinc-300"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-active disabled:cursor-not-allowed disabled:opacity-30 dark:bg-primary dark:hover:bg-primary-active"
             aria-label="Send message"
           >
             <svg

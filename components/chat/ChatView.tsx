@@ -130,11 +130,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
     lastMsg.content === "";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white dark:bg-black">
+    <div className="flex h-screen overflow-hidden bg-canvas dark:bg-surface-dark">
       {/* Sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-zinc-200 md:flex md:flex-col dark:border-zinc-800">
-        <div className="flex h-12 items-center gap-2 border-b border-zinc-200 px-4 dark:border-zinc-800">
-          <span className="text-sm font-semibold tracking-tight">TwT.ai</span>
+      <aside className="hidden w-64 shrink-0 border-r border-hairline bg-canvas-soft md:flex md:flex-col dark:border-hairline dark:bg-surface-dark-elevated">
+        <div className="flex h-12 items-center gap-2 border-b border-hairline px-4 dark:border-hairline">
+          <span className="text-sm font-semibold tracking-tight text-ink dark:text-on-dark">TwT.ai</span>
         </div>
         <ConversationList />
       </aside>
@@ -142,7 +142,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
       {/* Main content */}
       <div className="relative flex min-h-0 flex-1 flex-col min-w-0">
         {/* Top bar */}
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800">
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-4 dark:border-hairline">
           <div className="flex items-center gap-2">
             <ModelSwitcher />
           </div>
@@ -171,9 +171,9 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
         {/* Cancelled banner */}
         {wasCancelled && (
-          <div className="mx-auto mb-2 w-full max-w-3xl rounded-lg bg-zinc-50 px-4 py-2 text-sm text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+          <div className="mx-auto mb-2 w-full max-w-3xl rounded-lg bg-canvas-soft px-4 py-2 text-sm text-muted dark:bg-surface-dark-elevated dark:text-muted-soft">
             Response cancelled.
-            <button onClick={handleRetry} className="ml-2 underline font-medium">
+            <button onClick={handleRetry} className="ml-2 underline font-medium text-primary hover:text-primary-active">
               Retry
             </button>
           </div>

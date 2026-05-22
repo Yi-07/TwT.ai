@@ -39,7 +39,7 @@ export function MessageList({
   if (messages.length === 0 && !isStreaming) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-zinc-400">Start a conversation</p>
+        <p className="text-muted-soft dark:text-on-dark-soft">Start a conversation</p>
       </div>
     );
   }

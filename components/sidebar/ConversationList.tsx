@@ -18,7 +18,7 @@ export function ConversationList() {
       <div className="px-3 py-3">
         <button
           onClick={() => createConversation(getDefaultModel())}
-          className="flex w-full items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          className="flex w-full items-center gap-2 rounded-lg border border-hairline px-3 py-2.5 text-sm font-medium text-body transition-colors hover:bg-canvas-card dark:border-hairline dark:text-on-dark dark:hover:bg-surface-dark-elevated"
         >
           <svg
             width="16"

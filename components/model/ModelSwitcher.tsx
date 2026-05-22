@@ -28,7 +28,7 @@ export function ModelSwitcher() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-body transition-colors hover:bg-canvas-soft dark:text-on-dark dark:hover:bg-surface-dark-elevated"
       >
         {activeProvider?.name ?? "Select model"}
         <svg
@@ -47,7 +47,7 @@ export function ModelSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-hairline bg-canvas py-1 shadow-lg dark:border-hairline dark:bg-surface-dark">
           {providers.map((p) => (
             <button
               key={p.id}
@@ -55,10 +55,10 @@ export function ModelSwitcher() {
                 setActiveModel(p.id);
                 setOpen(false);
               }}
-              className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
+              className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-canvas-soft dark:hover:bg-surface-dark-elevated ${
                 p.id === activeModelId
-                  ? "font-medium text-zinc-900 dark:text-zinc-50"
-                  : "text-zinc-600 dark:text-zinc-400"
+                  ? "font-medium text-ink dark:text-on-dark"
+                  : "text-muted dark:text-on-dark-soft"
               }`}
             >
               {p.name}
