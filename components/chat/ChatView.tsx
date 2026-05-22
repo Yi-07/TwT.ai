@@ -38,14 +38,19 @@ export function ChatView({ conversationId }: ChatViewProps) {
       modelOptions: settings,
     });
 
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.innerWidth >= 1024;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 1024;
   });
 
-  // Auto-collapse sidebar when window narrows (e.g. DevTools opens)
+  // Track narrow window for overlay vs inline sidebar
   useEffect(() => {
-    const onResize = () => setSidebarOpen(window.innerWidth >= 1024);
+    const onResize = () => {
+      const narrow = window.innerWidth < 1024;
+      setIsNarrow(narrow);
+      if (narrow) setSidebarOpen(false);
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -143,10 +148,24 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-canvas dark:bg-surface-dark">
-      {/* Sidebar */}
+      {/* Narrow overlay backdrop */}
+      {isNarrow && sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — inline on wide, overlay on narrow */}
       <aside
-        className={`shrink-0 border-r border-hairline bg-canvas-soft transition-all duration-200 dark:border-hairline dark:bg-surface-dark-elevated ${
-          sidebarOpen ? "w-64" : "w-0 overflow-hidden border-r-0"
+        className={`border-r border-hairline bg-canvas-soft dark:border-hairline dark:bg-surface-dark-elevated ${
+          isNarrow
+            ? `fixed left-0 top-0 z-50 h-full w-64 transition-transform duration-200 ${
+                sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`
+            : `shrink-0 transition-all duration-200 ${
+                sidebarOpen ? "w-64" : "w-0 overflow-hidden border-r-0"
+              }`
         }`}
       >
         <div className="flex h-12 items-center gap-2 border-b border-hairline px-4 dark:border-hairline" style={{ minWidth: 256 }}>
