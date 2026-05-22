@@ -40,3 +40,13 @@ See `.env.example`:
 - **API**: `/app/api/chat/route.ts` — Single SSE streaming endpoint
 - **State**: `/lib/store/` — Zustand stores (conversation, model settings)
 - **Artifacts**: Rendered in sandboxed iframes via `srcdoc`, supports React (Babel), HTML, and SVG
+
+## Vendored Dependencies
+
+Artifact sandbox dependencies are vendored in `public/vendor/` (no CDN):
+
+| File | Source | Version |
+|------|--------|---------|
+| `react.umd.js` | cdnjs / React | 18.3.1 |
+| `react-dom.umd.js` | cdnjs / ReactDOM | 18.3.1 |
+| `babel.min.js` | cdnjs / Babel Standalone | 7.28.4 |

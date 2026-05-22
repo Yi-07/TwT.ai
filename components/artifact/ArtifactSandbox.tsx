@@ -72,9 +72,9 @@ function buildSrcdoc(type: ArtifactType, code: string): string {
 <head>
 <meta charset="utf-8" />
 ${SENDPROMPT_SCRIPT}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.development.min.js"><\/script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.development.min.js"><\/script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.28.4/babel.min.js"><\/script>
+<script src="/vendor/react.umd.js"><\/script>
+<script src="/vendor/react-dom.umd.js"><\/script>
+<script src="/vendor/babel.min.js"><\/script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, sans-serif; }
