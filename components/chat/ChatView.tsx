@@ -114,14 +114,16 @@ export function ChatView({ conversationId }: ChatViewProps) {
   );
 
   const allMessages = active?.messages ?? [];
-  const showRetry =
-    !isStreaming &&
-    (error || (lastUserMessageRef.current && !rawContent)) &&
-    lastUserMessageRef.current;
-
-  // Streaming starts with content="" so the first chunk is visible
-  // as soon as it arrives. StreamingIndicator shows while waiting.
   const lastMsg = allMessages.at(-1);
+
+  const hasError = !!error;
+  const wasCancelled =
+    !isStreaming && !hasError && lastUserMessageRef.current && !rawContent;
+
+  const showRetry =
+    !isStreaming && lastUserMessageRef.current;
+
+  // StreamingIndicator shows while waiting for the first chunk
   const waitingForFirstChunk =
     isStreaming &&
     lastMsg?.role === "assistant" &&
@@ -155,23 +157,23 @@ export function ChatView({ conversationId }: ChatViewProps) {
           onSendPrompt={handleSendPrompt}
         />
 
-        {/* Error / retry banner */}
-        {error && (
+        {/* Error banner */}
+        {hasError && (
           <div className="mx-auto mb-2 w-full max-w-3xl rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
-            {error}
-            <button onClick={handleRetry} className="ml-2 underline font-medium">
-              Retry
-            </button>
+            Response failed — {error}
+            {showRetry && (
+              <button onClick={handleRetry} className="ml-2 underline font-medium">
+                Retry
+              </button>
+            )}
           </div>
         )}
 
-        {/* Retry after cancel */}
-        {showRetry && !error && (
-          <div className="mx-auto mb-2 w-full max-w-3xl px-4">
-            <button
-              onClick={handleRetry}
-              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            >
+        {/* Cancelled banner */}
+        {wasCancelled && (
+          <div className="mx-auto mb-2 w-full max-w-3xl rounded-lg bg-zinc-50 px-4 py-2 text-sm text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+            Response cancelled.
+            <button onClick={handleRetry} className="ml-2 underline font-medium">
               Retry
             </button>
           </div>
