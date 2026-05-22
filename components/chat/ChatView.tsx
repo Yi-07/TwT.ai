@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConversation } from "@/hooks/useConversation";
 import { useStream } from "@/hooks/useStream";
@@ -37,6 +37,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
       providerId: activeModelId,
       modelOptions: settings,
     });
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const lastUserMessageRef = useRef<string>("");
   const assistantMsgIdRef = useRef<string>("");
@@ -132,11 +134,17 @@ export function ChatView({ conversationId }: ChatViewProps) {
   return (
     <div className="flex h-screen overflow-hidden bg-canvas dark:bg-surface-dark">
       {/* Sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-hairline bg-canvas-soft md:flex md:flex-col dark:border-hairline dark:bg-surface-dark-elevated">
-        <div className="flex h-12 items-center gap-2 border-b border-hairline px-4 dark:border-hairline">
+      <aside
+        className={`shrink-0 border-r border-hairline bg-canvas-soft transition-all duration-200 dark:border-hairline dark:bg-surface-dark-elevated ${
+          sidebarOpen ? "w-64" : "w-0 overflow-hidden border-r-0"
+        }`}
+      >
+        <div className="flex h-12 items-center gap-2 border-b border-hairline px-4 dark:border-hairline" style={{ minWidth: 256 }}>
           <span className="text-sm font-semibold tracking-tight text-ink dark:text-on-dark">TwT.ai</span>
         </div>
-        <ConversationList />
+        <div style={{ minWidth: 256 }}>
+          <ConversationList />
+        </div>
       </aside>
 
       {/* Main content */}
@@ -144,6 +152,16 @@ export function ChatView({ conversationId }: ChatViewProps) {
         {/* Top bar */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-4 dark:border-hairline">
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-soft opacity-50 transition-opacity hover:opacity-100"
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 3v18" />
+              </svg>
+            </button>
             <ModelSwitcher />
           </div>
           <ModelSettings />
