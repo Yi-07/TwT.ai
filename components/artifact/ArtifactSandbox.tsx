@@ -75,6 +75,8 @@ ${SENDPROMPT_SCRIPT}
 <script src="/vendor/react.umd.js"><\/script>
 <script src="/vendor/react-dom.umd.js"><\/script>
 <script src="/vendor/babel.min.js"><\/script>
+<script src="/vendor/recharts.umd.js"><\/script>
+<script src="/vendor/lodash.umd.js"><\/script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, sans-serif; }

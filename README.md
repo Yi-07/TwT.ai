@@ -50,3 +50,5 @@ Artifact sandbox dependencies are vendored in `public/vendor/` (no CDN):
 | `react.umd.js` | cdnjs / React | 18.3.1 |
 | `react-dom.umd.js` | cdnjs / ReactDOM | 18.3.1 |
 | `babel.min.js` | cdnjs / Babel Standalone | 7.28.4 |
+| `recharts.umd.js` | unpkg / Recharts | 2.15.3 |
+| `lodash.umd.js` | unpkg / lodash | 4.17.21 |
