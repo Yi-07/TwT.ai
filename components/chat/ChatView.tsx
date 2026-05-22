@@ -52,7 +52,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
     const onResize = () => {
       const narrow = window.innerWidth < 1024;
       setIsNarrow(narrow);
-      if (narrow) setSidebarOpen(false);
+      setSidebarOpen(!narrow);
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
