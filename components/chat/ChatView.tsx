@@ -38,15 +38,16 @@ export function ChatView({ conversationId }: ChatViewProps) {
       modelOptions: settings,
     });
 
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.innerWidth >= 1024;
-  });
-  const [isNarrow, setIsNarrow] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth < 1024;
-  });
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isNarrow, setIsNarrow] = useState(false);
   const userToggled = useRef(false);
+
+  // Initialise responsive state from actual window width after mount
+  useEffect(() => {
+    const wide = window.innerWidth >= 1024;
+    setSidebarOpen(wide);
+    setIsNarrow(!wide);
+  }, []);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((v) => {
@@ -198,7 +199,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
             <button
               onClick={toggleSidebar}
               className="flex h-7 w-7 items-center justify-center rounded text-muted-soft opacity-50 transition-opacity hover:opacity-100"
-              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+              aria-label="Toggle sidebar"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
