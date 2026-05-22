@@ -12,11 +12,16 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const MAX_HEIGHT = 200;
+
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+    const clamped = Math.min(el.scrollHeight, MAX_HEIGHT);
+    el.style.height = `${clamped}px`;
+    // Only show scrollbar when content exceeds the max height
+    el.style.overflowY = el.scrollHeight > MAX_HEIGHT ? "auto" : "hidden";
   }, []);
 
   const handleSend = useCallback(() => {
@@ -26,6 +31,7 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
     setValue("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
+      textareaRef.current.style.overflowY = "hidden";
     }
   }, [value, isStreaming, onSend]);
 
