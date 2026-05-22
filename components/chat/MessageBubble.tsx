@@ -19,6 +19,7 @@ interface SegmentRendererProps {
 function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   const handleRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -54,10 +55,15 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
   }
 
   return (
-    <div className="mt-4 border-l-2 border-hairline pl-3 dark:border-hairline">
+    <div
+      className="mt-4 border-l-2 border-hairline pl-3 dark:border-hairline"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <ArtifactToolbar
         title={seg.title}
         expanded={expanded}
+        visible={hovered}
         content={seg.content}
         artifactType={seg.artifactType}
         onRefresh={handleRefresh}
