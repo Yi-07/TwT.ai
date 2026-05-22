@@ -28,6 +28,8 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
 
   const abortRef = useRef<AbortController | null>(null);
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef("");
+  const rafRef = useRef(0);
 
   const clearSlowTimer = useCallback(() => {
     if (slowTimerRef.current) {
@@ -37,14 +39,31 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
     setIsSlowResponse(false);
   }, []);
 
+  const flushPending = useCallback(() => {
+    if (pendingRef.current) {
+      setRawContent((prev) => prev + pendingRef.current);
+      pendingRef.current = "";
+    }
+    rafRef.current = 0;
+  }, []);
+
   const abort = useCallback(() => {
     abortRef.current?.abort();
     clearSlowTimer();
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
   }, [clearSlowTimer]);
 
   const send = useCallback(
     (messages: Message[]) => {
       setRawContent("");
+      pendingRef.current = "";
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = 0;
+      }
       setError(null);
       setIsStreaming(true);
       setIsSlowResponse(false);
@@ -104,13 +123,19 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
                     firstChunk = false;
                     clearSlowTimer();
                   }
-                  setRawContent((prev) => prev + delta);
+                  pendingRef.current += delta;
+                  if (!rafRef.current) {
+                    rafRef.current = requestAnimationFrame(() => flushPending());
+                  }
                 }
               } catch {
                 // skip unparseable chunks during streaming
               }
             }
           }
+
+          // Flush any remaining pending content
+          flushPending();
         })
         .catch((err) => {
           if (err.name !== "AbortError") {
@@ -119,11 +144,16 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
         })
         .finally(() => {
           clearSlowTimer();
+          flushPending();
+          if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = 0;
+          }
           setIsStreaming(false);
           abortRef.current = null;
         });
     },
-    [opts.providerId, opts.modelOptions, clearSlowTimer],
+    [opts.providerId, opts.modelOptions, clearSlowTimer, flushPending],
   );
 
   return { rawContent, isStreaming, isSlowResponse, error, send, abort };
