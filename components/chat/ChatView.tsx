@@ -49,8 +49,12 @@ export function ChatView({ conversationId }: ChatViewProps) {
   const userToggled = useRef(false);
 
   const toggleSidebar = useCallback(() => {
-    userToggled.current = true;
-    setSidebarOpen((v) => !v);
+    setSidebarOpen((v) => {
+      const next = !v;
+      // Lock if closing, unlock if opening (matches auto behavior on wide)
+      userToggled.current = !next;
+      return next;
+    });
   }, []);
 
   // Auto-manage sidebar on resize, but only if user never manually toggled
