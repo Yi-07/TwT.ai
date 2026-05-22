@@ -38,7 +38,10 @@ export function ChatView({ conversationId }: ChatViewProps) {
       modelOptions: settings,
     });
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.innerWidth >= 1024;
+  });
   const [isNarrow, setIsNarrow] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth < 1024;
