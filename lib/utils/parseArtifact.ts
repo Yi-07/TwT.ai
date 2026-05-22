@@ -61,14 +61,7 @@ export class ArtifactParser {
           this.tagTitle = titleMatch[1];
           this.state = "body";
           this.bodyBuf = "";
-          // Emit placeholder on first body content so the user sees
-          // a loading indicator instead of a blank page.
           this.placeholderIndex = this.segments.length;
-          this.segments.push({
-            type: "placeholder",
-            id: `placeholder-${this.artIdx}`,
-            title: this.tagTitle,
-          });
         } else {
           this.textBuf += this.tagBuf;
           this.state = "text";
@@ -78,11 +71,26 @@ export class ArtifactParser {
         const closeTag = delta.indexOf("</artifact>", i);
         if (closeTag === -1) {
           this.bodyBuf += delta.slice(i);
+
+          // Emit or update placeholder with current preview
+          const placeholder: Segment = {
+            type: "placeholder",
+            id: `placeholder-${this.artIdx}`,
+            title: this.tagTitle,
+            preview: this.bodyBuf,
+          };
+          if (this.placeholderIndex >= 0 && this.placeholderIndex < this.segments.length) {
+            this.segments[this.placeholderIndex] = placeholder;
+          } else {
+            this.placeholderIndex = this.segments.length;
+            this.segments.push(placeholder);
+          }
+
           break;
         }
         this.bodyBuf += delta.slice(i, closeTag);
 
-        // Replace placeholder with the completed artifact
+        // Artifact complete — replace placeholder with artifact
         const artifactSeg: Segment = {
           type: "artifact",
           id: `artifact-${this.tagType}-${this.artIdx++}`,
@@ -92,7 +100,6 @@ export class ArtifactParser {
         };
 
         if (this.placeholderIndex >= 0) {
-          // Create a new array so React detects the structural change
           this.segments = [
             ...this.segments.slice(0, this.placeholderIndex),
             artifactSeg,
