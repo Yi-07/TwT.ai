@@ -46,13 +46,23 @@ export function ChatView({ conversationId }: ChatViewProps) {
     if (typeof window === "undefined") return false;
     return window.innerWidth < 1024;
   });
+  const preNarrowOpen = useRef(true);
 
   // Track narrow window for overlay vs inline sidebar
   useEffect(() => {
     const onResize = () => {
       const narrow = window.innerWidth < 1024;
       setIsNarrow(narrow);
-      setSidebarOpen(!narrow);
+      if (narrow) {
+        // Save current state, force close for overlay
+        setSidebarOpen((v) => {
+          preNarrowOpen.current = v;
+          return false;
+        });
+      } else {
+        // Restore to pre-narrow state
+        setSidebarOpen(preNarrowOpen.current);
+      }
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
