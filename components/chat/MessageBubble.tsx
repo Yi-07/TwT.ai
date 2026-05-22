@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Message } from "@/types/conversation";
 import type { Segment } from "@/types/artifact";
-import { parseArtifact } from "@/lib/utils/parseArtifact";
+import { ArtifactParser } from "@/lib/utils/parseArtifact";
 import { ArtifactSandbox } from "@/components/artifact/ArtifactSandbox";
 import { ArtifactToolbar } from "@/components/artifact/ArtifactToolbar";
 
@@ -83,6 +83,13 @@ interface MessageBubbleProps {
 export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
+  // Per-message parser instance — eliminates module-level singleton
+  // interference when multiple messages render simultaneously.
+  const segments = useMemo(() => {
+    const parser = new ArtifactParser();
+    return parser.parse(message.content);
+  }, [message.content]);
+
   return (
     <div
       className={`flex w-full animate-fade-in ${isUser ? "justify-end" : "justify-start"}`}
@@ -100,7 +107,7 @@ export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            {parseArtifact(message.content).map((seg) => (
+            {segments.map((seg) => (
               <SegmentRenderer key={seg.id} seg={seg} onSendPrompt={onSendPrompt} />
             ))}
           </div>

@@ -2,7 +2,7 @@ import type { ArtifactType, Segment } from "@/types/artifact";
 
 type State = "text" | "tag_open" | "body";
 
-class ArtifactParser {
+export class ArtifactParser {
   private state: State = "text";
   private segments: Segment[] = [];
   private textIdx = 0;
