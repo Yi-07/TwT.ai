@@ -105,7 +105,7 @@ export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
       <div
         className={
           isUser
-            ? "max-w-[80%] rounded-2xl rounded-br-md bg-primary px-5 py-3 text-white"
+            ? "max-w-[80%] rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-white dark:bg-user-bubble"
             : "w-full max-w-3xl px-4 py-2"
         }
       >

@@ -5,19 +5,20 @@
   --background: #faf9f5;
   --foreground: #141413;
 
-  /* Claude-inspired warm palette */
+  /* Warm terracotta palette */
   --color-canvas: #faf9f5;
-  --color-canvas-soft: #f5f0e8;
-  --color-canvas-card: #efe9de;
+  --color-canvas-soft: #f3eadc;
+  --color-canvas-card: #ede3d0;
   --color-primary: #cc785c;
   --color-primary-active: #a9583e;
+  --color-user-bubble: #4a4642;
   --color-surface-dark: #181715;
   --color-surface-dark-elevated: #252320;
   --color-ink: #141413;
   --color-body: #3d3d3a;
   --color-muted: #6c6a64;
   --color-muted-soft: #8e8b82;
-  --color-hairline: #e6dfd8;
+  --color-hairline: #ded2c0;
   --color-on-dark: #faf9f5;
   --color-on-dark-soft: #a09d96;
   --color-accent-teal: #5db8a6;
@@ -32,6 +33,7 @@
   --color-canvas-card: var(--color-canvas-card);
   --color-primary: var(--color-primary);
   --color-primary-active: var(--color-primary-active);
+  --color-user-bubble: var(--color-user-bubble);
   --color-surface-dark: var(--color-surface-dark);
   --color-surface-dark-elevated: var(--color-surface-dark-elevated);
   --color-ink: var(--color-ink);
@@ -52,9 +54,10 @@
     --background: #181715;
     --foreground: #faf9f5;
     --color-canvas: #181715;
-    --color-canvas-soft: #252320;
-    --color-canvas-card: #252320;
-    --color-hairline: #2e2c28;
+    --color-canvas-soft: #201d1a;
+    --color-canvas-card: #282420;
+    --color-user-bubble: #3a3530;
+    --color-hairline: #302c28;
     --color-body: #a09d96;
     --color-muted: #8e8b82;
     --color-muted-soft: #6c6a64;
