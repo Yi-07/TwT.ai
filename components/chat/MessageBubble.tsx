@@ -58,6 +58,8 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
       <ArtifactToolbar
         title={seg.title}
         expanded={expanded}
+        content={seg.content}
+        artifactType={seg.artifactType}
         onRefresh={handleRefresh}
         onToggleExpand={handleToggleExpand}
       />
