@@ -74,6 +74,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const lastUserMessageRef = useRef<string>("");
   const assistantMsgIdRef = useRef<string>("");
+  const activeConvIdRef = useRef<string>("");
 
   // Handle "new" conversation: create one and redirect
   useEffect(() => {
@@ -96,17 +97,18 @@ export function ChatView({ conversationId }: ChatViewProps) {
   // no iframe is ever unmounted/remounted.
   useEffect(() => {
     const msgId = assistantMsgIdRef.current;
-    const cId = activeId;
-    if (msgId && cId && cId !== "new") {
-      updateAssistantMessage(cId, msgId, rawContent);
-    }
-  }, [rawContent, activeId, updateAssistantMessage]);
+    const cId = activeConvIdRef.current;
+    if (!msgId || !cId || cId === "new") return;
+    if (rawContent === "") return;
+    updateAssistantMessage(cId, msgId, rawContent);
+  }, [rawContent, updateAssistantMessage]);
 
   const handleSend = useCallback(
     (content: string) => {
       lastUserMessageRef.current = content;
 
       const cId = sendMessage(content);
+      activeConvIdRef.current = cId;
       if (cId !== activeId) {
         router.replace(`/c/${cId}`);
       }
