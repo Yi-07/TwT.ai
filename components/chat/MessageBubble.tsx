@@ -39,6 +39,37 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
     );
   }
 
+  if (seg.type === "placeholder") {
+    const hasPreview = seg.preview && seg.preview.trim().length > 0;
+    return (
+      <div className="my-3 rounded-lg border border-hairline bg-canvas-card px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted">
+            正在生成「{seg.title}」
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
+          </span>
+          {hasPreview && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="ml-auto text-xs text-muted-soft underline underline-offset-2 hover:text-muted"
+            >
+              {expanded ? "收起代码" : "点击查看"}
+            </button>
+          )}
+        </div>
+        {hasPreview && expanded && (
+          <pre className="mt-3 max-h-60 overflow-y-auto rounded-lg bg-surface-dark p-3 text-xs text-on-dark-soft">
+            <code>{seg.preview}</code>
+          </pre>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className="mt-4 border-l-2 border-hairline pl-3 dark:border-hairline"
