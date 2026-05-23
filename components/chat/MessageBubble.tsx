@@ -6,36 +6,6 @@ import remarkGfm from "remark-gfm";
 import type { Message } from "@/types/conversation";
 import type { Segment } from "@/types/artifact";
 import { ArtifactParser } from "@/lib/utils/parseArtifact";
-
-function normalizeMarkdown(md: string): string {
-  let fixed = md;
-
-  // 1. Auto-close unclosed code fences
-  const ticks = fixed.match(/```/g);
-  if (ticks && ticks.length % 2 !== 0) {
-    fixed += "\n```";
-  }
-
-  // 2. Insert blank line before headings stuck to preceding text
-  fixed = fixed.replace(/([^\n])\n(#{1,6}\s)/g, "$1\n\n$2");
-
-  // 3. Pad short table rows to match the longest row
-  const lines = fixed.split("\n");
-  const tableLines = lines.filter((l) => l.trim().startsWith("|"));
-  if (tableLines.length > 1) {
-    const maxCols = Math.max(...tableLines.map((l) => l.split("|").length));
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith("|")) {
-        const cols = lines[i].split("|");
-        while (cols.length < maxCols) cols.push(" ");
-        lines[i] = cols.join("|");
-      }
-    }
-    fixed = lines.join("\n");
-  }
-
-  return fixed;
-}
 import { ArtifactSandbox } from "@/components/artifact/ArtifactSandbox";
 import { ArtifactToolbar } from "@/components/artifact/ArtifactToolbar";
 
@@ -63,39 +33,8 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
     return (
       <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-zinc-950 [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-zinc-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm dark:[&_code]:bg-zinc-800 [&_table]:w-full [&_th]:border [&_th]:border-zinc-200 [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-zinc-200 [&_td]:px-3 [&_td]:py-2">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {normalizeMarkdown(seg.content)}
+          {seg.content}
         </ReactMarkdown>
-      </div>
-    );
-  }
-
-  if (seg.type === "placeholder") {
-    const hasPreview = seg.preview && seg.preview.trim().length > 0;
-    return (
-      <div className="my-3 rounded-lg border border-hairline bg-canvas-card px-4 py-3 dark:border-hairline dark:bg-surface-dark-elevated">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted dark:text-on-dark-soft">
-            正在生成「{seg.title}」
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
-          </span>
-          {hasPreview && (
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              className="ml-auto text-xs text-muted-soft underline underline-offset-2 hover:text-muted"
-            >
-              {expanded ? "收起代码" : "点击查看"}
-            </button>
-          )}
-        </div>
-        {hasPreview && expanded && (
-          <pre className="mt-3 max-h-60 overflow-y-auto rounded-lg bg-surface-dark p-3 text-xs text-on-dark-soft dark:bg-surface-dark-elevated">
-            <code>{seg.preview}</code>
-          </pre>
-        )}
       </div>
     );
   }
@@ -141,8 +80,7 @@ export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
   // interference when multiple messages render simultaneously.
   const segments = useMemo(() => {
     const parser = new ArtifactParser();
-    parser.parse(message.content);
-    return parser.flush();
+    return parser.parse(message.content);
   }, [message.content]);
 
   return (

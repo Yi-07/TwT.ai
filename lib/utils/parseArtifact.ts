@@ -15,9 +15,6 @@ export class ArtifactParser {
   private tagType = "";
   private tagTitle = "";
 
-  // Track placeholder so it can be replaced when </artifact> arrives
-  private placeholderIndex = -1;
-
   // Monotonic position tracking
   private processed = 0;
 
@@ -66,7 +63,6 @@ export class ArtifactParser {
           this.tagTitle = titleMatch[1] || titleMatch[2] || titleMatch[3] || "";
           this.state = "body";
           this.bodyBuf = "";
-          this.placeholderIndex = this.segments.length;
         } else {
           this.textBuf += this.tagBuf;
           this.state = "text";
@@ -76,44 +72,17 @@ export class ArtifactParser {
         const closeTag = delta.indexOf("</artifact>", i);
         if (closeTag === -1) {
           this.bodyBuf += delta.slice(i);
-
-          // Emit or update placeholder with current preview
-          const placeholder: Segment = {
-            type: "placeholder",
-            id: `placeholder-${this.artIdx}`,
-            title: this.tagTitle,
-            preview: this.bodyBuf,
-          };
-          if (this.placeholderIndex >= 0 && this.placeholderIndex < this.segments.length) {
-            this.segments[this.placeholderIndex] = placeholder;
-          } else {
-            this.placeholderIndex = this.segments.length;
-            this.segments.push(placeholder);
-          }
-
           break;
         }
         this.bodyBuf += delta.slice(i, closeTag);
 
-        // Artifact complete — replace placeholder with artifact
-        const artifactSeg: Segment = {
+        this.segments.push({
           type: "artifact",
           id: `artifact-${this.tagType}-${this.artIdx++}`,
           artifactType: this.tagType as ArtifactType,
           title: this.tagTitle,
           content: this.bodyBuf,
-        };
-
-        if (this.placeholderIndex >= 0) {
-          this.segments = [
-            ...this.segments.slice(0, this.placeholderIndex),
-            artifactSeg,
-            ...this.segments.slice(this.placeholderIndex + 1),
-          ];
-          this.placeholderIndex = -1;
-        } else {
-          this.segments.push(artifactSeg);
-        }
+        });
 
         i = closeTag + "</artifact>".length;
         this.state = "text";
@@ -130,21 +99,7 @@ export class ArtifactParser {
       this.state = "text";
     }
     if (this.state === "body") {
-      // Replace placeholder with the body content as a code block
-      if (this.placeholderIndex >= 0) {
-        const bodyText = this.bodyBuf || "(empty artifact)";
-        const textSeg: Segment = {
-          type: "text",
-          id: `text-${this.textIdx++}`,
-          content: "```\n" + bodyText + "\n```",
-        };
-        this.segments = [
-          ...this.segments.slice(0, this.placeholderIndex),
-          textSeg,
-          ...this.segments.slice(this.placeholderIndex + 1),
-        ];
-        this.placeholderIndex = -1;
-      }
+      this.textBuf += this.bodyBuf;
       this.state = "text";
     }
     this.flushTextBuf();
@@ -170,7 +125,6 @@ export class ArtifactParser {
     this.textBuf = "";
     this.tagBuf = "";
     this.bodyBuf = "";
-    this.placeholderIndex = -1;
     this.processed = 0;
   }
 }
@@ -187,17 +141,11 @@ let lastRaw = "";
  * (handles switching between different messages during rendering).
  */
 export function parseArtifact(raw: string): Segment[] {
-  // Strip surrounding markdown code fences so models that wrap
-  // artifact tags in ``` still produce correct segments.
-  const cleaned = raw
-    .replace(/^```[\w]*\s*\n/, "")
-    .replace(/\n```\s*$/, "");
-
-  if (!currentParser || !cleaned.startsWith(lastRaw)) {
+  if (!currentParser || !raw.startsWith(lastRaw)) {
     currentParser = new ArtifactParser();
   }
-  lastRaw = cleaned;
-  return currentParser.parse(cleaned);
+  lastRaw = raw;
+  return currentParser.parse(raw);
 }
 
 /** Flush the current parser — call when streaming ends. */

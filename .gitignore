@@ -49,12 +49,15 @@ next-env.d.ts
 *.njsproj
 *.sln
 
-# Claude Code
+# Claude Code Caches
 .claude/
+.firecrawl
 
 # OS
 Thumbs.db
 Desktop.ini
 
-# questions
+# questions and development files
 development.txt
+modification.md
+history.txt
