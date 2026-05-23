@@ -81,7 +81,7 @@ export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
   const segments = useMemo(() => {
     const parser = new ArtifactParser();
     parser.parse(message.content);
-    return parser.flush();
+    return parser.flush(false);
   }, [message.content]);
 
   return (

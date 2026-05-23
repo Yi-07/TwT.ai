@@ -58,6 +58,9 @@ export class ArtifactParser {
         const titleMatch =
           /title\s*=?\s*(?:"([^"]*)"|'([^']*)'|(\S+))/.exec(this.tagBuf);
 
+        console.log("[parser tag_open] tagBuf:", JSON.stringify(this.tagBuf));
+        console.log("[parser tag_open] typeMatch:", typeMatch?.[0], "titleMatch:", titleMatch?.[0]);
+
         if (typeMatch && titleMatch) {
           this.tagType = (typeMatch[1] || typeMatch[2] || typeMatch[3]) as string;
           this.tagTitle = titleMatch[1] || titleMatch[2] || titleMatch[3] || "";
@@ -93,14 +96,16 @@ export class ArtifactParser {
   }
 
   /** Call when the stream ends — flush any buffered content as text. */
-  flush(): Segment[] {
-    if (this.state === "tag_open") {
-      this.textBuf += this.tagBuf;
-      this.state = "text";
-    }
-    if (this.state === "body") {
-      this.textBuf += this.bodyBuf;
-      this.state = "text";
+  flush(hard = true): Segment[] {
+    if (hard) {
+      if (this.state === "tag_open") {
+        this.textBuf += this.tagBuf;
+        this.state = "text";
+      }
+      if (this.state === "body") {
+        this.textBuf += this.bodyBuf;
+        this.state = "text";
+      }
     }
     this.flushTextBuf();
     return this.segments;
