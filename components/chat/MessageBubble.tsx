@@ -80,7 +80,8 @@ export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
   // interference when multiple messages render simultaneously.
   const segments = useMemo(() => {
     const parser = new ArtifactParser();
-    return parser.parse(message.content);
+    parser.parse(message.content);
+    return parser.flush();
   }, [message.content]);
 
   return (

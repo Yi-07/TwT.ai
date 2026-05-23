@@ -118,7 +118,6 @@ export function ChatView({ conversationId }: ChatViewProps) {
       const msgId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       assistantMsgIdRef.current = msgId;
       createAssistantMessage(cId, msgId);
-      console.log("[handleSend] cId:", cId, "| hook activeId:", activeId, "| store activeId:", useConversationStore.getState().activeId, "| msgId:", msgId);
 
       const { conversations } = useConversationStore.getState();
       const conv = conversations.find((c) => c.id === cId);
