@@ -95,13 +95,16 @@ export function ChatView({ conversationId }: ChatViewProps) {
   // Sync streaming content into the store so the same Message key
   // persists from pre-stream through streaming to post-stream —
   // no iframe is ever unmounted/remounted.
+  // Only persist to store after streaming completes — avoid ReactMarkdown
+  // stripping <artifact> tags from live content during rendering.
   useEffect(() => {
+    if (isStreaming) return;
     const msgId = assistantMsgIdRef.current;
     const cId = activeConvIdRef.current;
     if (!msgId || !cId || cId === "new") return;
     if (rawContent === "") return;
     updateAssistantMessage(cId, msgId, rawContent);
-  }, [rawContent, updateAssistantMessage]);
+  }, [rawContent, isStreaming, updateAssistantMessage]);
 
   const handleSend = useCallback(
     (content: string) => {
@@ -221,6 +224,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
           isStreaming={waitingForFirstChunk}
           isSlow={isSlowResponse}
           onSendPrompt={handleSendPrompt}
+          streamingContent={isStreaming ? rawContent : ""}
         />
 
         {/* Error banner */}
