@@ -133,28 +133,3 @@ export class ArtifactParser {
     this.processed = 0;
   }
 }
-
-// --- Module-level parser management ---
-
-let currentParser: ArtifactParser | null = null;
-let lastRaw = "";
-
-/**
- * Parse a (possibly partial) raw string into an ordered array of segments.
- * Maintains a single parser instance keyed by monotonic prefix growth:
- * if raw does NOT start with the previous raw, a new parser is created
- * (handles switching between different messages during rendering).
- */
-export function parseArtifact(raw: string): Segment[] {
-  if (!currentParser || !raw.startsWith(lastRaw)) {
-    currentParser = new ArtifactParser();
-  }
-  lastRaw = raw;
-  return currentParser.parse(raw);
-}
-
-/** Flush the current parser — call when streaming ends. */
-export function flushArtifact(): Segment[] {
-  if (!currentParser) return [];
-  return currentParser.flush();
-}
