@@ -56,7 +56,7 @@ export class ArtifactParser {
             this.tagBuf,
           );
         const titleMatch =
-          /title\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+))/.exec(this.tagBuf);
+          /title\s*=?\s*(?:"([^"]*)"|'([^']*)'|(\S+))/.exec(this.tagBuf);
 
         if (typeMatch && titleMatch) {
           this.tagType = (typeMatch[1] || typeMatch[2] || typeMatch[3]) as string;
