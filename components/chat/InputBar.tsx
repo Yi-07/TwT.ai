@@ -6,9 +6,10 @@ interface InputBarProps {
   onSend: (content: string) => void;
   onStop: () => void;
   isStreaming: boolean;
+  disabled?: boolean;
 }
 
-export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
+export function InputBar({ onSend, onStop, isStreaming, disabled }: InputBarProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -58,8 +59,9 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
             adjustHeight();
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Send a message..."
+          placeholder={disabled ? "Loading..." : "Send a message..."}
           rows={1}
+          disabled={disabled}
           className="flex-1 resize-none rounded-2xl border border-hairline bg-transparent px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:text-on-dark dark:placeholder:text-on-dark-soft dark:focus:border-primary"
         />
 
@@ -81,7 +83,7 @@ export function InputBar({ onSend, onStop, isStreaming }: InputBarProps) {
         ) : (
           <button
             onClick={handleSend}
-            disabled={!value.trim()}
+            disabled={!value.trim() || disabled}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-active disabled:cursor-not-allowed disabled:opacity-30 dark:bg-primary dark:hover:bg-primary-active"
             aria-label="Send message"
           >

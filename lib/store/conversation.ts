@@ -23,6 +23,8 @@ interface ConversationState {
   ) => void;
   updateTitle: (id: string, title: string) => void;
   getActive: () => Conversation | undefined;
+  _hasHydrated: boolean;
+  setHasHydrated: (value: boolean) => void;
 }
 
 export const useConversationStore = create<ConversationState>()(
@@ -120,6 +122,9 @@ export const useConversationStore = create<ConversationState>()(
         const { conversations, activeId } = get();
         return conversations.find((c) => c.id === activeId);
       },
+
+      _hasHydrated: false,
+      setHasHydrated: (value) => set({ _hasHydrated: value }),
     }),
     {
       name: "twt-conversations",
@@ -128,6 +133,9 @@ export const useConversationStore = create<ConversationState>()(
         conversations: state.conversations,
         activeId: state.activeId,
       }),
+      onRehydrateStorage: (state) => () => {
+        state.setHasHydrated(true);
+      },
     },
   ),
 );
