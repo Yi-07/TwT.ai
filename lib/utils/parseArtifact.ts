@@ -47,13 +47,26 @@ export class ArtifactParser {
       } else if (this.state === "tag_open") {
         const tagEnd = delta.indexOf(">", i);
         if (tagEnd === -1) {
-          this.tagBuf += delta.slice(i);
-          break;
+          // Model sometimes omits ">" — e.g. <artifact type="react" title="X"export...
+          // Detect when the tag is complete but ">" is missing.
+          const implicitEnd = /\s*(?=export\b|function\b|const\b|import\b|let\b|var\b|class\b|return\b|if\b|for\b)/.exec(
+            delta.slice(i),
+          );
+          if (this.tagBuf.startsWith("<artifact") && implicitEnd) {
+            // Tag end inferred — close the tag and enter body
+            console.log("[tag_open implicit >] code keyword at delta pos:", implicitEnd.index, "tagBuf:", JSON.stringify(this.tagBuf + delta.slice(i, i + implicitEnd.index)));
+            this.tagBuf += delta.slice(i, i + implicitEnd.index);
+            i += implicitEnd.index;
+          } else {
+            this.tagBuf += delta.slice(i);
+            break;
+          }
+        } else {
+          console.log("[tag_open found >] delta slice:", JSON.stringify(delta.slice(i, tagEnd + 1)));
+          console.log("[tag_open found >] full delta from i:", JSON.stringify(delta.slice(i, Math.min(i + 200, delta.length))));
+          this.tagBuf += delta.slice(i, tagEnd + 1);
+          i = tagEnd + 1;
         }
-        console.log("[tag_open found >] delta slice:", JSON.stringify(delta.slice(i, tagEnd + 1)));
-        console.log("[tag_open found >] full delta from i:", JSON.stringify(delta.slice(i, Math.min(i + 200, delta.length))));
-        this.tagBuf += delta.slice(i, tagEnd + 1);
-        i = tagEnd + 1;
 
         // Lenient matching — handles single/double/no quotes, any attribute order
         const typeMatch =
