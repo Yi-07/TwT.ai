@@ -220,6 +220,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
         <MessageList
           messages={allMessages}
           isStreaming={waitingForFirstChunk}
+          streaming={isStreaming}
           isSlow={isSlowResponse}
           onSendPrompt={handleSendPrompt}
         />

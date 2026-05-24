@@ -8,6 +8,7 @@ import { StreamingIndicator } from "./StreamingIndicator";
 interface MessageListProps {
   messages: Message[];
   isStreaming: boolean;
+  streaming?: boolean;
   isSlow: boolean;
   onSendPrompt?: (text: string) => void;
 }
@@ -15,6 +16,7 @@ interface MessageListProps {
 export function MessageList({
   messages,
   isStreaming,
+  streaming,
   isSlow,
   onSendPrompt,
 }: MessageListProps) {
@@ -51,7 +53,7 @@ export function MessageList({
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} onSendPrompt={onSendPrompt} />
+          <MessageBubble key={msg.id} message={msg} streaming={streaming} onSendPrompt={onSendPrompt} />
         ))}
         {isStreaming && <StreamingIndicator isSlow={isSlow} />}
         <div ref={bottomRef} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { Message } from "@/types/conversation";
 import type { ModelOptions } from "@/types/provider";
 
@@ -156,6 +156,15 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
     },
     [opts.providerId, opts.modelOptions, clearSlowTimer, flushPending],
   );
+
+  // Cleanup slow timer on unmount
+  useEffect(() => {
+    return () => {
+      if (slowTimerRef.current) {
+        clearTimeout(slowTimerRef.current);
+      }
+    };
+  }, []);
 
   return { rawContent, isStreaming, isSlowResponse, error, send, abort };
 }

@@ -101,10 +101,11 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
 
 interface MessageBubbleProps {
   message: Message;
+  streaming?: boolean;
   onSendPrompt?: (text: string) => void;
 }
 
-export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
+export function MessageBubble({ message, streaming, onSendPrompt }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   // Per-message parser instance — eliminates module-level singleton
@@ -112,8 +113,8 @@ export function MessageBubble({ message, onSendPrompt }: MessageBubbleProps) {
   const segments = useMemo(() => {
     const parser = new ArtifactParser();
     parser.parse(message.content);
-    return parser.flush(false);
-  }, [message.content]);
+    return parser.flush(!streaming);
+  }, [message.content, streaming]);
 
   return (
     <div
