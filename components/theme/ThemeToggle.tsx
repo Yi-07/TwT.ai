@@ -149,15 +149,15 @@ export function ThemeToggle() {
         line.setAttribute("stroke-linecap", "round");
         raysG.appendChild(line);
       }
-      applyFrame(svg, isDark ? "moon" : "sun");
+      applyFrame(svg, isDark ? "sun" : "moon");
       return;
     }
 
     // Subsequent: play animation
     if (isDark) {
-      animateToMoon(svg);
-    } else {
       animateToSun(svg);
+    } else {
+      animateToMoon(svg);
     }
   }, [isDark]);
 
