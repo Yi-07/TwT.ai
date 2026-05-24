@@ -440,6 +440,11 @@ Animated "Generating..." with coral dots and expandable code preview during body
 
 6px warm scrollbars. RAF throttle for 60-80% fewer renders. All sandbox deps vendored.
 
+### Auto-scroll respects user scroll position (021a4ae)
+
+During streaming, auto-scroll only engages if user is within 80px of bottom.
+Scrolling up to read history suppresses auto-scroll until user returns to bottom.
+
 ---
 
 ## Architecture Decisions
