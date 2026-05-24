@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
-const RAYS = [0, 45, 90, 135, 180, 225, 270, 315];
+import { Sun, Moon } from "lucide-react";
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
@@ -55,8 +54,6 @@ export function ThemeToggle() {
   }
 
   const isDark = theme === "dark";
-  const ease = "cubic-bezier(0.4, 0, 0.2, 1)";
-  const dur = "600ms";
 
   return (
     <button
@@ -64,63 +61,28 @@ export function ThemeToggle() {
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
       className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-canvas-soft active:scale-95 dark:hover:bg-surface-dark-elevated"
     >
-      <svg
-        viewBox="0 0 24 24"
-        className="h-4 w-4 overflow-visible"
-        aria-hidden="true"
-      >
-        {/* Sun rays — rotate ccw + shrink into centre; amber warm gold */}
-        <g
-          style={{
-            color: "#E8A55A",
-            transformOrigin: "12px 12px",
-            transform: isDark
-              ? "rotate(0deg) scale(1)"
-              : "rotate(-180deg) scale(0)",
-            opacity: isDark ? 1 : 0,
-            transition: `transform ${dur} ${ease}, opacity ${dur} ${ease}`,
-          }}
-        >
-          {RAYS.map((deg) => (
-            <line
-              key={deg}
-              x1={12}
-              y1={2}
-              x2={12}
-              y2={4.5}
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              style={{
-                transformOrigin: "12px 12px",
-                transform: `rotate(${deg}deg)`,
-              }}
-            />
-          ))}
-        </g>
-
-        {/* Sun body — filled circle, warm amber */}
-        <circle
-          cx={12}
-          cy={12}
-          r={5}
-          fill="#E8A55A"
-          style={{
-            opacity: isDark ? 1 : 0,
-            transition: `opacity ${dur} ${ease}`,
-          }}
+      <span className="relative flex h-4 w-4 items-center justify-center">
+        {/* Sun — visible in dark mode */}
+        <Sun
+          size={15}
+          strokeWidth={1.75}
+          className={`absolute text-accent-amber transition-all duration-500 ease-out ${
+            isDark
+              ? "rotate-0 scale-100 opacity-100"
+              : "rotate-90 scale-0 opacity-0"
+          }`}
         />
-
-        {/* Moon crescent — warm dark grey for light bg */}
-        <path
-          d="M 12 7 A 5 5 0 0 0 12 17 A 3 3 0 0 1 12 7 Z"
-          fill="#3D3D3A"
-          style={{
-            opacity: isDark ? 0 : 1,
-            transition: `opacity ${dur} ${ease}`,
-          }}
+        {/* Moon — visible in light mode */}
+        <Moon
+          size={15}
+          strokeWidth={1.75}
+          className={`absolute text-body transition-all duration-500 ease-out ${
+            isDark
+              ? "-rotate-90 scale-0 opacity-0"
+              : "rotate-0 scale-100 opacity-100"
+          }`}
         />
-      </svg>
+      </span>
     </button>
   );
 }
