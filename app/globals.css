@@ -140,6 +140,16 @@
   animation: fade-in 0.3s ease-out forwards;
 }
 
+/* Smooth theme transitions — only property, not shorthand, so Tailwind
+   utility classes (transition-opacity, transition-colors, …) win by specificity. */
+*,
+*::before,
+*::after {
+  transition-property: background-color, color, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
 /* Thin, warm scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
