@@ -9,6 +9,7 @@ import { useConversationStore } from "@/lib/store/conversation";
 import { ConversationList } from "@/components/sidebar/ConversationList";
 import { ModelSwitcher } from "@/components/model/ModelSwitcher";
 import { ModelSettings } from "@/components/model/ModelSettings";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { MessageList } from "./MessageList";
 import { InputBar } from "./InputBar";
 
@@ -213,7 +214,10 @@ export function ChatView({ conversationId }: ChatViewProps) {
             </button>
             <ModelSwitcher />
           </div>
-          <ModelSettings />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <ModelSettings />
+          </div>
         </div>
 
         {/* Messages */}
