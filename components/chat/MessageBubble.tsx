@@ -123,7 +123,7 @@ export function MessageBubble({ message, streaming, onSendPrompt }: MessageBubbl
       <div
         className={
           isUser
-            ? "max-w-[80%] rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-ink"
+            ? "max-w-[80%] rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-ink dark:text-on-dark"
             : "w-full max-w-3xl px-4 py-2"
         }
       >
