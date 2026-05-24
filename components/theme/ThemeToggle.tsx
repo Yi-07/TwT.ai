@@ -113,7 +113,7 @@ export function ThemeToggle() {
 
         {/* Moon crescent — warm dark grey for light bg */}
         <path
-          d="M 12 7 A 5 5 0 0 0 12 17 A 4.5 4.5 0 0 1 12 7 Z"
+          d="M 12 7 A 5 5 0 0 0 12 17 A 3 3 0 0 1 12 7 Z"
           fill="#3D3D3A"
           style={{
             opacity: isDark ? 0 : 1,
