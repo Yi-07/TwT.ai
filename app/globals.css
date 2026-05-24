@@ -159,24 +159,31 @@
   transition-timing-function: var(--theme-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-/* View Transitions API — progressive enhancement for Chrome */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 500ms;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+/* View Transitions API — ripple-out from toggle button (Chrome only).
+   Old snapshot stays perfectly still → zero text jitter, no vertigo.
+   New snapshot expands as a circle from the click point via clip-path. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: none;
+    mix-blend-mode: normal;
+    z-index: 1;
+  }
+
+  ::view-transition-new(root) {
+    animation: ripple-out var(--theme-transition-duration, 400ms)
+               cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    mix-blend-mode: normal;
+    z-index: 2;
+  }
 }
-::view-transition-old(root) {
-  animation-name: fade-out;
-}
-::view-transition-new(root) {
-  animation-name: fade-in-zoom;
-}
-@keyframes fade-out {
-  to { opacity: 0; }
-}
-@keyframes fade-in-zoom {
-  from { opacity: 0; transform: scale(1.02); }
-  to { opacity: 1; transform: scale(1); }
+
+@keyframes ripple-out {
+  from {
+    clip-path: circle(0px at var(--clip-x, 50%) var(--clip-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--clip-r, 100vmax) at var(--clip-x, 50%) var(--clip-y, 50%));
+  }
 }
 
 /* Thin, warm scrollbars */

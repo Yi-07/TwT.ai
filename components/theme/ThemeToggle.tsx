@@ -14,25 +14,41 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
-  const toggle = useCallback(() => {
-    const next = theme === "dark" ? "light" : "dark";
+  const toggle = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      const next = theme === "dark" ? "light" : "dark";
 
-    const apply = () => {
-      document.documentElement.dataset.theme = next;
-      try {
-        localStorage.setItem("twt-theme", next);
-      } catch {
-        // localStorage unavailable (private browsing)
+      const apply = () => {
+        document.documentElement.dataset.theme = next;
+        try {
+          localStorage.setItem("twt-theme", next);
+        } catch {
+          // localStorage unavailable (private browsing)
+        }
+        setTheme(next);
+      };
+
+      if (!document.startViewTransition) {
+        apply();
+        return;
       }
-      setTheme(next);
-    };
 
-    if (document.startViewTransition) {
+      const x = event.clientX;
+      const y = event.clientY;
+      const endRadius = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y),
+      );
+
+      const root = document.documentElement;
+      root.style.setProperty("--clip-x", `${x}px`);
+      root.style.setProperty("--clip-y", `${y}px`);
+      root.style.setProperty("--clip-r", `${endRadius}px`);
+
       document.startViewTransition(() => apply());
-    } else {
-      apply();
-    }
-  }, [theme]);
+    },
+    [theme],
+  );
 
   if (!mounted) {
     return <div className="h-7 w-7" />;
