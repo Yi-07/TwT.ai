@@ -31,7 +31,7 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
 
   if (seg.type === "text") {
     return (
-      <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-zinc-950 [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-zinc-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm dark:[&_code]:bg-zinc-800 [&_table]:w-full [&_th]:border [&_th]:border-zinc-200 [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-zinc-200 [&_td]:px-3 [&_td]:py-2">
+      <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-code-block [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-code-block [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_table]:w-full [&_th]:border [&_th]:border-hairline [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-hairline [&_td]:px-3 [&_td]:py-2">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {seg.content}
         </ReactMarkdown>
@@ -123,7 +123,7 @@ export function MessageBubble({ message, streaming, onSendPrompt }: MessageBubbl
       <div
         className={
           isUser
-            ? "max-w-[80%] rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-white dark:bg-user-bubble"
+            ? "max-w-[80%] rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-ink"
             : "w-full max-w-3xl px-4 py-2"
         }
       >

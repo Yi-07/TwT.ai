@@ -4,80 +4,83 @@
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 :root {
-  --background: #faf9f5;
-  --foreground: #141413;
+  --background: #FBFBFA;
+  --foreground: #1D1B18;
 
-  /* Warm terracotta palette */
-  --color-canvas: #faf9f5;
-  --color-canvas-soft: #f3eadc;
-  --color-canvas-card: #ede3d0;
-  --color-primary: #cc785c;
-  --color-primary-active: #a9583e;
-  --color-user-bubble: #4a4642;
+  /* Warm oatmeal / bone china palette (light) */
+  --color-canvas: #FBFBFA;
+  --color-canvas-soft: #F7F5F0;
+  --color-canvas-card: #F4F1EA;
+  --color-primary: #D97757;
+  --color-primary-active: #B8573A;
+  --color-user-bubble: #F0EDE4;
   --color-surface-dark: #181715;
   --color-surface-dark-elevated: #252320;
-  --color-ink: #141413;
-  --color-body: #3d3d3a;
-  --color-muted: #6c6a64;
-  --color-muted-soft: #8e8b82;
-  --color-hairline: #ded2c0;
-  --color-on-dark: #faf9f5;
-  --color-on-dark-soft: #a09d96;
-  --color-accent-teal: #5db8a6;
-  --color-accent-amber: #e8a55a;
+  --color-ink: #1D1B18;
+  --color-body: #3D3D3A;
+  --color-muted: #706A60;
+  --color-muted-soft: #9B968D;
+  --color-hairline: #EBE8E0;
+  --color-on-dark: #FAF9F5;
+  --color-on-dark-soft: #A09D96;
+  --color-accent-teal: #5DB8A6;
+  --color-accent-amber: #E8A55A;
+  --color-code-block: #F4F1EA;
 
   /* Scrollbar */
-  --scrollbar-thumb: #ded2c0;
-  --scrollbar-thumb-hover: #c4b89e;
+  --scrollbar-thumb: #EBE8E0;
+  --scrollbar-thumb-hover: #D9D5CB;
 
   /* Multi-color artifact blocks — light (morandi muted) */
-  --comp-purple-subtle: #f5f3ff;
-  --comp-purple-border: #ddd6fe;
-  --comp-purple-text: #6d28d9;
+  --comp-purple-subtle: #F5F3FF;
+  --comp-purple-border: #DDD6FE;
+  --comp-purple-text: #6D28D9;
 
-  --comp-green-subtle: #ecfdf5;
-  --comp-green-border: #d1fae5;
+  --comp-green-subtle: #ECFDF5;
+  --comp-green-border: #D1FAE5;
   --comp-green-text: #047857;
 
-  --comp-orange-subtle: #fff7ed;
-  --comp-orange-border: #fed7aa;
-  --comp-orange-text: #c2410c;
+  --comp-orange-subtle: #FFF7ED;
+  --comp-orange-border: #FED7AA;
+  --comp-orange-text: #C2410C;
 
-  --comp-blue-subtle: #eff6ff;
-  --comp-blue-border: #bfdbfe;
-  --comp-blue-text: #1d4ed8;
+  --comp-blue-subtle: #EFF6FF;
+  --comp-blue-border: #BFDBFE;
+  --comp-blue-text: #1D4ED8;
 }
 
 :root[data-theme="dark"] {
-  --background: #181715;
-  --foreground: #faf9f5;
-  --color-canvas: #181715;
-  --color-canvas-soft: #201d1a;
-  --color-canvas-card: #282420;
-  --color-user-bubble: #3a3530;
-  --color-hairline: #302c28;
-  --color-body: #a09d96;
-  --color-muted: #8e8b82;
-  --color-muted-soft: #6c6a64;
+  --background: #141312;
+  --foreground: #E5E1DA;
 
-  --scrollbar-thumb: #4a4642;
-  --scrollbar-thumb-hover: #6c6a64;
+  --color-canvas: #141312;
+  --color-canvas-soft: #0A0A09;
+  --color-canvas-card: #1C1B1A;
+  --color-user-bubble: #242321;
+  --color-hairline: #262422;
+  --color-body: #8C867D;
+  --color-muted: #8C867D;
+  --color-muted-soft: #76716A;
+  --color-code-block: #1F1E1D;
 
-  --comp-purple-subtle: #2e1065;
-  --comp-purple-border: #4c1d95;
-  --comp-purple-text: #c4b5fd;
+  --scrollbar-thumb: #262422;
+  --scrollbar-thumb-hover: #3D3A37;
 
-  --comp-green-subtle: #022c22;
-  --comp-green-border: #064e3b;
-  --comp-green-text: #a7f3d0;
+  --comp-purple-subtle: #2E1065;
+  --comp-purple-border: #4C1D95;
+  --comp-purple-text: #C4B5FD;
+
+  --comp-green-subtle: #022C22;
+  --comp-green-border: #064E3B;
+  --comp-green-text: #A7F3D0;
 
   --comp-orange-subtle: #431407;
-  --comp-orange-border: #7c2d12;
-  --comp-orange-text: #fed7aa;
+  --comp-orange-border: #7C2D12;
+  --comp-orange-text: #FED7AA;
 
   --comp-blue-subtle: #172554;
-  --comp-blue-border: #1e40af;
-  --comp-blue-text: #bfdbfe;
+  --comp-blue-border: #1E40AF;
+  --comp-blue-text: #BFDBFE;
 }
 
 @theme inline {
@@ -100,6 +103,7 @@
   --color-on-dark-soft: var(--color-on-dark-soft);
   --color-accent-teal: var(--color-accent-teal);
   --color-accent-amber: var(--color-accent-amber);
+  --color-code-block: var(--color-code-block);
 
   --color-comp-purple-subtle: var(--comp-purple-subtle);
   --color-comp-purple-border: var(--comp-purple-border);
