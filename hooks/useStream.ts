@@ -129,7 +129,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
                   }
                 }
               } catch {
-                console.warn("[useStream] unparseable SSE chunk:", data.slice(0, 200));
+                // skip unparseable chunks during streaming
               }
             }
           }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConversation } from "@/hooks/useConversation";
 import { useStream } from "@/hooks/useStream";
@@ -95,7 +95,9 @@ export function ChatView({ conversationId }: ChatViewProps) {
   // Sync streaming content directly into the placeholder message.
   // The placeholder in allMessages has the same key (msgId) that will
   // persist after streaming — no key switch, no iframe destroy/recreate.
-  useEffect(() => {
+  // useLayoutEffect runs synchronously before paint, guaranteeing the
+  // store update and rawContent update land in the same frame.
+  useLayoutEffect(() => {
     const msgId = assistantMsgIdRef.current;
     const cId = activeConvIdRef.current;
     if (!msgId || !cId || cId === "new") return;

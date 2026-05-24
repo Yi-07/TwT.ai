@@ -54,7 +54,6 @@ export class ArtifactParser {
           );
           if (this.tagBuf.startsWith("<artifact") && implicitEnd) {
             // Tag end inferred — close the tag and enter body
-            console.log("[tag_open implicit >] code keyword at delta pos:", implicitEnd.index, "tagBuf:", JSON.stringify(this.tagBuf + delta.slice(i, i + implicitEnd.index)));
             this.tagBuf += delta.slice(i, i + implicitEnd.index);
             i += implicitEnd.index;
           } else {
@@ -62,8 +61,6 @@ export class ArtifactParser {
             break;
           }
         } else {
-          console.log("[tag_open found >] delta slice:", JSON.stringify(delta.slice(i, tagEnd + 1)));
-          console.log("[tag_open found >] full delta from i:", JSON.stringify(delta.slice(i, Math.min(i + 200, delta.length))));
           this.tagBuf += delta.slice(i, tagEnd + 1);
           i = tagEnd + 1;
         }
@@ -75,9 +72,6 @@ export class ArtifactParser {
           );
         const titleMatch =
           /title\s*=?\s*(?:"([^"]*)"|'([^']*)'|(\S+))/.exec(this.tagBuf);
-
-        console.log("[parser tag_open] tagBuf:", JSON.stringify(this.tagBuf));
-        console.log("[parser tag_open] typeMatch:", typeMatch?.[0], "titleMatch:", titleMatch?.[0]);
 
         if (typeMatch && titleMatch) {
           this.tagType = (typeMatch[1] || typeMatch[2] || typeMatch[3]) as string;
@@ -194,7 +188,6 @@ export class ArtifactParser {
 
   private flushTextBuf() {
     if (this.textBuf) {
-      console.log("[flushTextBuf]", JSON.stringify(this.textBuf.slice(0, 100)));
       this.segments.push({
         type: "text",
         id: `text-${this.textIdx++}`,
