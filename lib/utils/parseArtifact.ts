@@ -50,6 +50,8 @@ export class ArtifactParser {
           this.tagBuf += delta.slice(i);
           break;
         }
+        console.log("[tag_open found >] delta slice:", JSON.stringify(delta.slice(i, tagEnd + 1)));
+        console.log("[tag_open found >] full delta from i:", JSON.stringify(delta.slice(i, Math.min(i + 200, delta.length))));
         this.tagBuf += delta.slice(i, tagEnd + 1);
         i = tagEnd + 1;
 
@@ -70,6 +72,15 @@ export class ArtifactParser {
           this.state = "body";
           this.bodyBuf = "";
           this.placeholderIndex = this.segments.length;
+        } else if (this.tagBuf.startsWith("<artifact")) {
+          // Malformed artifact tag — DeepSeek often writes type="中文"
+          // instead of type="react". Fallback: sniff from body content.
+          const rawType = (typeMatch?.[1] || typeMatch?.[2] || typeMatch?.[3] || "").trim();
+          const rawTitle = (titleMatch?.[1] || titleMatch?.[2] || titleMatch?.[3] || "").trim();
+          this.tagTitle = rawTitle || rawType || "Untitled";
+          this.tagType = "";
+          this.state = "body";
+          this.bodyBuf = "";
         } else {
           this.textBuf += this.tagBuf;
           this.state = "text";
@@ -97,6 +108,18 @@ export class ArtifactParser {
           break;
         }
         this.bodyBuf += delta.slice(i, closeTag);
+
+        // Sniff type from body content if tag had malformed attributes
+        if (!this.tagType) {
+          const trimmed = this.bodyBuf.trimStart();
+          if (/^<svg\b/i.test(trimmed)) {
+            this.tagType = "svg";
+          } else if (/^<!DOCTYPE|^<html\b|^<head\b|^<body\b/i.test(trimmed)) {
+            this.tagType = "html";
+          } else {
+            this.tagType = "react";
+          }
+        }
 
         // Artifact complete — replace placeholder with artifact
         const artifactSeg: Segment = {
@@ -158,6 +181,7 @@ export class ArtifactParser {
 
   private flushTextBuf() {
     if (this.textBuf) {
+      console.log("[flushTextBuf]", JSON.stringify(this.textBuf.slice(0, 100)));
       this.segments.push({
         type: "text",
         id: `text-${this.textIdx++}`,
