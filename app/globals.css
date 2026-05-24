@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 :root {
   --background: #faf9f5;
   --foreground: #141413;
@@ -23,6 +25,59 @@
   --color-on-dark-soft: #a09d96;
   --color-accent-teal: #5db8a6;
   --color-accent-amber: #e8a55a;
+
+  /* Scrollbar */
+  --scrollbar-thumb: #ded2c0;
+  --scrollbar-thumb-hover: #c4b89e;
+
+  /* Multi-color artifact blocks — light (morandi muted) */
+  --comp-purple-subtle: #f5f3ff;
+  --comp-purple-border: #ddd6fe;
+  --comp-purple-text: #6d28d9;
+
+  --comp-green-subtle: #ecfdf5;
+  --comp-green-border: #d1fae5;
+  --comp-green-text: #047857;
+
+  --comp-orange-subtle: #fff7ed;
+  --comp-orange-border: #fed7aa;
+  --comp-orange-text: #c2410c;
+
+  --comp-blue-subtle: #eff6ff;
+  --comp-blue-border: #bfdbfe;
+  --comp-blue-text: #1d4ed8;
+}
+
+:root[data-theme="dark"] {
+  --background: #181715;
+  --foreground: #faf9f5;
+  --color-canvas: #181715;
+  --color-canvas-soft: #201d1a;
+  --color-canvas-card: #282420;
+  --color-user-bubble: #3a3530;
+  --color-hairline: #302c28;
+  --color-body: #a09d96;
+  --color-muted: #8e8b82;
+  --color-muted-soft: #6c6a64;
+
+  --scrollbar-thumb: #4a4642;
+  --scrollbar-thumb-hover: #6c6a64;
+
+  --comp-purple-subtle: #2e1065;
+  --comp-purple-border: #4c1d95;
+  --comp-purple-text: #c4b5fd;
+
+  --comp-green-subtle: #022c22;
+  --comp-green-border: #064e3b;
+  --comp-green-text: #a7f3d0;
+
+  --comp-orange-subtle: #431407;
+  --comp-orange-border: #7c2d12;
+  --comp-orange-text: #fed7aa;
+
+  --comp-blue-subtle: #172554;
+  --comp-blue-border: #1e40af;
+  --comp-blue-text: #bfdbfe;
 }
 
 @theme inline {
@@ -45,23 +100,25 @@
   --color-on-dark-soft: var(--color-on-dark-soft);
   --color-accent-teal: var(--color-accent-teal);
   --color-accent-amber: var(--color-accent-amber);
+
+  --color-comp-purple-subtle: var(--comp-purple-subtle);
+  --color-comp-purple-border: var(--comp-purple-border);
+  --color-comp-purple-text: var(--comp-purple-text);
+
+  --color-comp-green-subtle: var(--comp-green-subtle);
+  --color-comp-green-border: var(--comp-green-border);
+  --color-comp-green-text: var(--comp-green-text);
+
+  --color-comp-orange-subtle: var(--comp-orange-subtle);
+  --color-comp-orange-border: var(--comp-orange-border);
+  --color-comp-orange-text: var(--comp-orange-text);
+
+  --color-comp-blue-subtle: var(--comp-blue-subtle);
+  --color-comp-blue-border: var(--comp-blue-border);
+  --color-comp-blue-text: var(--comp-blue-text);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #181715;
-    --foreground: #faf9f5;
-    --color-canvas: #181715;
-    --color-canvas-soft: #201d1a;
-    --color-canvas-card: #282420;
-    --color-user-bubble: #3a3530;
-    --color-hairline: #302c28;
-    --color-body: #a09d96;
-    --color-muted: #8e8b82;
-    --color-muted-soft: #6c6a64;
-  }
 }
 
 @keyframes fade-in {
@@ -87,15 +144,15 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #ded2c0;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c4b89e;
+  background: var(--scrollbar-thumb-hover);
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: #ded2c0 transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 body {
