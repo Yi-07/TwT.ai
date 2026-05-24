@@ -27,10 +27,15 @@ export function MessageList({
     const container = containerRef.current;
     if (!container) return;
 
-    // Use scrollTop on the scrollable container directly.
-    // Instant scroll avoids overlapping smooth animations from
-    // rapid-fire SSE chunks during streaming.
-    container.scrollTop = container.scrollHeight;
+    // Only auto-scroll if the user is already near the bottom.
+    // If they've scrolled up to read history, don't interrupt.
+    const threshold = 80;
+    const isNearBottom =
+      container.scrollTop + container.clientHeight >=
+      container.scrollHeight - threshold;
+    if (isNearBottom || messages.length === 0) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   // Scroll to bottom on first mount regardless
