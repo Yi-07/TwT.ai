@@ -10,7 +10,6 @@ interface MessageListProps {
   isStreaming: boolean;
   isSlow: boolean;
   onSendPrompt?: (text: string) => void;
-  streamingContent?: string;
 }
 
 export function MessageList({
@@ -18,7 +17,6 @@ export function MessageList({
   isStreaming,
   isSlow,
   onSendPrompt,
-  streamingContent,
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -31,14 +29,14 @@ export function MessageList({
     // Instant scroll avoids overlapping smooth animations from
     // rapid-fire SSE chunks during streaming.
     container.scrollTop = container.scrollHeight;
-  }, [messages, streamingContent]);
+  }, [messages]);
 
   // Scroll to bottom on first mount regardless
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, []);
 
-  if (messages.length === 0 && !isStreaming && !streamingContent) {
+  if (messages.length === 0 && !isStreaming) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-soft dark:text-on-dark-soft">Start a conversation</p>
@@ -55,18 +53,6 @@ export function MessageList({
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} onSendPrompt={onSendPrompt} />
         ))}
-        {streamingContent && (
-          <MessageBubble
-            key="streaming"
-            message={{
-              id: "streaming",
-              role: "assistant",
-              content: streamingContent,
-              createdAt: Date.now(),
-            }}
-            onSendPrompt={onSendPrompt}
-          />
-        )}
         {isStreaming && <StreamingIndicator isSlow={isSlow} />}
         <div ref={bottomRef} />
       </div>

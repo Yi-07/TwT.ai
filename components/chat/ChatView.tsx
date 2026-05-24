@@ -92,19 +92,15 @@ export function ChatView({ conversationId }: ChatViewProps) {
     }
   }, [activeId, conversationId, router]);
 
-  // Sync streaming content into the store so the same Message key
-  // persists from pre-stream through streaming to post-stream —
-  // no iframe is ever unmounted/remounted.
-  // Only persist to store after streaming completes — avoid ReactMarkdown
-  // stripping <artifact> tags from live content during rendering.
+  // Sync streaming content directly into the placeholder message.
+  // The placeholder in allMessages has the same key (msgId) that will
+  // persist after streaming — no key switch, no iframe destroy/recreate.
   useEffect(() => {
-    if (isStreaming) return;
     const msgId = assistantMsgIdRef.current;
     const cId = activeConvIdRef.current;
     if (!msgId || !cId || cId === "new") return;
-    if (rawContent === "") return;
     updateAssistantMessage(cId, msgId, rawContent);
-  }, [rawContent, isStreaming, updateAssistantMessage]);
+  }, [rawContent, updateAssistantMessage]);
 
   const handleSend = useCallback(
     (content: string) => {
@@ -224,7 +220,6 @@ export function ChatView({ conversationId }: ChatViewProps) {
           isStreaming={waitingForFirstChunk}
           isSlow={isSlowResponse}
           onSendPrompt={handleSendPrompt}
-          streamingContent={isStreaming ? rawContent : ""}
         />
 
         {/* Error banner */}
