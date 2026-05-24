@@ -111,10 +111,10 @@ export function ThemeToggle() {
           }}
         />
 
-        {/* Moon crescent — terracotta coral */}
+        {/* Moon crescent — warm dark grey for light bg */}
         <path
           d="M 12 7 A 5 5 0 0 0 12 17 A 4.5 4.5 0 0 1 12 7 Z"
-          fill="#D97757"
+          fill="#3D3D3A"
           style={{
             opacity: isDark ? 0 : 1,
             transition: `opacity ${dur} ${ease}`,
