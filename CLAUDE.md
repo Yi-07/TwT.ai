@@ -216,12 +216,18 @@ can preserve component instances across streaming re-renders.
 
 ### Parser (`/lib/utils/parseArtifact.ts`)
 
+- `ArtifactParser` class (exported) — create per-message instances, not singletons
 - State machine with three states: `text` → `tag_open` → `body`
-- Only processes new delta on each call, not the full accumulated string
-- Buffers incomplete opening tags until `>` is found — no partial emission
-- Holds body content until `</artifact>` closing tag arrives — then emits artifact segment
-- Monotonic prefix detection auto-creates a new parser when switching messages
-- `flush()` converts any buffered partial content back to text when stream ends
+- Per-message `useMemo` creates fresh parser, parses full `message.content`
+- **Lenient matching**: type/title accept single/double/no quotes, any attribute order
+- **Missing `>` fallback**: detects code keywords after tag to auto-close
+- **Missing `type` fallback**: if `type` value is malformed (DeepSeek writes Chinese),
+  sniffs body content to determine react/html/svg
+- **`flush(hard)`**: `hard=false` preserves tagBuf/bodyBuf during streaming;
+  `hard=true` dumps everything as text (used for truncated / persisted messages)
+- `placeholder` segment emitted during body state — animated indicator shown in UI
+- `placeholderIndex` tracking enables replacing the placeholder with the artifact
+  segment when `</artifact>` arrives
 
 ### Sandbox (`/components/artifact/ArtifactSandbox.tsx`)
 
@@ -235,21 +241,25 @@ can preserve component instances across streaming re-renders.
   - Sandbox → parent: `{ type: 'sendPrompt', text: string }`
   - Parent → sandbox: `{ type: 'theme', value: 'light' | 'dark' }`
 - Exposes `window.sendPrompt(text)` in sandbox global scope (injected before all other scripts)
-- CDN allowlist (loaded inside the sandbox only):
-  - `https://unpkg.com/`
-  - `https://cdn.jsdelivr.net/`
-  - `https://cdnjs.cloudflare.com/`
+- Dependencies vendored in `public/vendor/` — no external CDN calls from sandbox:
+  `react.umd.js`, `react-dom.umd.js`, `babel.min.js`, `recharts.umd.js`,
+  `lodash.umd.js`, `prop-types.umd.js`
 
 ### Toolbar (`/components/artifact/ArtifactToolbar.tsx`)
 
-Sits above the iframe. Contains: artifact title, refresh button, expand/collapse button.
-Interacts only with `ArtifactSandbox` via props — no store access.
+Sits above the iframe. Contains: artifact title, copy source, download, refresh,
+expand/collapse. Interacts only via props — no store access. Toolbar fades in on
+mouse hover; fully transparent by default to minimize visual noise.
 
 ### System prompt instruction for artifact output
 
-Defined in `lib/defaults.ts` as `ARTIFACT_SYSTEM_PROMPT`. Injected automatically
-by `app/api/chat/route.ts` as the default system prompt (prepended when the user
-provides a custom prompt).
+Defined in `lib/defaults.ts` — split into two prompts:
+- `SYSTEM_PROMPT_TEXT` — for plain text replies (forbids artifact tags)
+- `SYSTEM_PROMPT_ARTIFACT` — for artifact-enabled replies
+
+`app/api/chat/route.ts` uses `classifyIntent()` to select the prompt based on
+the user's last message (keyword matching: "画一个", "图表", "chart", etc.).
+The selected prompt is injected as the default system message.
 
 ---
 
@@ -262,16 +272,89 @@ User input
   → POST /api/chat
   → Provider Registry → active Provider
   → ReadableStream (SSE)
-  → useStream hook (reads chunks, appends to rawContent)
-  → parseArtifact(rawContent) → Segment[]
-  → MessageBubble renders Segment[] in order:
-      Segment.type === 'text'     → <ReactMarkdown>
-      Segment.type === 'artifact' → <ArtifactToolbar> + <ArtifactSandbox>
+  → useStream hook (reads chunks, RAF-throttled → rawContent)
+  → useLayoutEffect syncs rawContent into store placeholder message (stable msgId)
+  → MessageBubble (key=msgId) calls ArtifactParser on message.content
+  → Segment[] renders in order:
+      Segment.type === 'text'        → <ReactMarkdown>
+      Segment.type === 'placeholder' → animated "Generating..." indicator
+      Segment.type === 'artifact'    → <ArtifactToolbar> + <ArtifactSandbox>
 ```
 
-`useStream` calls `parseArtifact` on every new chunk so the UI updates incrementally.
-Text segments stream character-by-character. Artifact segments are held until the
-closing `</artifact>` tag is received, then the iframe is mounted.
+**Key design**: The assistant message is created in the store BEFORE streaming starts
+with `content=""`. During streaming, `rawContent` is synced into this same message
+via `useLayoutEffect` (synchronous before paint). The message's React key (msgId)
+remains stable from creation through streaming to persistence — the iframe is never
+unmounted/remounted. Text segments stream character-by-character. Artifact segments
+show a placeholder while code is being generated, then the iframe appears once
+`</artifact>` arrives.
+
+---
+
+## Common Pitfalls & Lessons
+
+### React State & Refs
+
+- **Never read a ref inside a `setState` updater function.** React calls updaters
+  asynchronously; by then the ref may have been cleared. Always capture the ref
+  value into a local variable first, then use the local in the updater.
+  Example: `const v = ref.current; ref.current = ""; setState(prev => prev + v);`
+
+- **`useLayoutEffect` for synchronous store sync.** When rawContent must land in
+  the Zustand store before the browser paints the next frame, `useEffect` is not
+  enough — React may batch `setRawContent` and the effect into separate renders.
+  Use `useLayoutEffect` to guarantee both updates land in the same frame.
+
+- **Module-level singletons are poison for multi-instance rendering.**
+  The module-level `parseArtifact()` / `flushArtifact()` singleton caused
+  interference when multiple messages rendered simultaneously. Each message
+  now instantiates its own `ArtifactParser` via `useMemo`.
+
+### Artifact Parser
+
+- **Models frequently omit `>` from the opening tag.** A `>`-less tag
+  like `<artifact type="react" title="X"export...` keeps the parser in
+  `tag_open` forever. The parser now detects code keywords (`export`,
+  `function`, `const`, etc.) immediately after the title attribute and
+  auto-closes the tag.
+
+- **Use `flush(false)` during streaming, `flush(true)` for persisted messages.**
+  `flush(false)` only drains `textBuf` — preserves `tagBuf` and `bodyBuf`
+  so incomplete tags aren't corrupted. `flush(true)` dumps everything,
+  converting truncated body content into a markdown code block.
+
+- **Lenient attribute matching is required for DeepSeek.** The parser
+  accepts `type="react"`, `type='react'`, and `type=react` (unquoted).
+  If `type` is missing or malformed, the body is sniffed for type
+  (`<svg` → svg, `<!DOCTYPE`/`<html` → html, default → react).
+
+### Streaming Pipeline
+
+- **Messages MUST be rendered from the store, not as a separate bubble.**
+  Using `key="streaming"` for live content and `key={msgId}` for persisted
+  content causes React to unmount/remount the iframe. Syncing rawContent
+  directly into the store placeholder (same `key`) avoids this entirely.
+
+- **The `streaming` prop tells `MessageBubble` which flush mode to use.**
+  Prop chain: `ChatView` → `MessageList` → `MessageBubble`. During
+  streaming: `flush(false)`. After persistence: `flush(true)` (shows
+  truncated code).
+
+### InputBar / Layout
+
+- **InputBar needs `relative z-10`** — the MessageList overflow container
+  can overlap the InputBar by a few pixels at the bottom. Without a
+  stacking context, clicks in that zone go to the message area instead
+  of the textarea.
+
+### Model Output Quality (DeepSeek-specific)
+
+- DeepSeek frequently produces malformed artifact tags (wrong `type`,
+  missing `=` sign, missing `>`). Our parser has layers of fallback for
+  each pattern. If all fallbacks fail, the content renders as plain
+  Markdown — never crashes.
+- For artifact code generation, Claude and Qwen models produce more
+  reliable JSX syntax than DeepSeek.
 
 ---
 
@@ -419,5 +502,9 @@ NEXT_PUBLIC_APP_URL=           # e.g. http://localhost:3000
   `registry.ts` (pure data) when adding a provider
 - **Always** add new provider env vars for both API key and model version
   (e.g. `PROVIDER_API_KEY` + `PROVIDER_MODEL`) to `.env.example`
+- **Always** capture ref values into local variables before clearing the ref
+  and passing to `setState` — React updaters run asynchronously
+- **Always** use `useLayoutEffect` (not `useEffect`) for state syncs that must
+  land in the same frame as the triggering render
 - **Always** commit at every checkpoint listed above before proceeding — this enables
   clean rollback if a later checkpoint introduces a regression

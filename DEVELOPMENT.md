@@ -347,6 +347,101 @@ Prop chain: `ArtifactSandbox` → `SegmentRenderer` → `MessageBubble` →
 
 ---
 
+## Phase 13 — Intent Routing & Prompt Split
+
+### Prompt split + intent routing (a5e6ffa, 6cc91dc, 8aeafdb)
+
+Split artifact prompt into two: `SYSTEM_PROMPT_TEXT` (forbids artifact tags) and
+`SYSTEM_PROMPT_ARTIFACT` (artifact-enabled). `classifyIntent()` in API route
+scans user's last message for keywords to select the right prompt. Server-side
+response logging via `ReadableStream.tee()` — appends to `modelresponse` file.
+
+---
+
+## Phase 14 — Parser Robustness
+
+### DeepSeek malformed tag fallbacks (2d70082, 5a277ad, d56c217)
+
+Three common DeepSeek output defects, all handled by parser:
+
+| Defect | Example | Fix |
+|--------|---------|-----|
+| `type` value is Chinese | `type="折线图"` | Sniff body content to determine type |
+| `title=` sign missing | `title"图表"` | Regex makes `=` optional |
+| `>` missing | `` <artifact type="react" title="X"export... `` | Detect code keywords after title → auto-close |
+
+### `flush(hard)` semantic split (99937fb, 50d8baf)
+
+`flush(false)`: streaming mode — only drains textBuf, preserves tagBuf/bodyBuf
+to prevent partial tags from leaking into ReactMarkdown. `flush(true)`: persisted
+mode — dumps everything, converts truncated body to code block.
+
+### Per-message parser instances (50a97cf, 10abf94)
+
+Replaced module-level `currentParser`/`lastRaw` singleton with per-message
+`useMemo(() => new ArtifactParser())`. Eliminated interference when rendering
+multiple history messages simultaneously. Removed dead `parseArtifact()` and
+`flushArtifact()` module-level wrappers.
+
+---
+
+## Phase 15 — Streaming Pipeline
+
+### Stable iframe lifecycle (c7866f9)
+
+Assistant message created in store before streaming (`content=""`). `rawContent`
+synced directly into same message — iframe key (msgId) never changes, never
+unmounted. Eliminated CDN reload on stream end.
+
+### `useLayoutEffect` for store sync (bd4258b)
+
+Changed rawContent→store sync from `useEffect` to `useLayoutEffect` — runs
+synchronously before paint, both updates land in same frame.
+
+### Ref capture in setState updater (c16045a)
+
+**Critical**: `setRawContent(prev => prev + pendingRef.current)` — React calls
+updater asynchronously, ref already cleared. Fix: capture value in local
+variable before calling setState.
+
+### InputBar z-index (456cb4d)
+
+MessageList overflow container overlaps InputBar by a few px. Clicks went to
+message area. Fixed with `relative z-10`.
+
+### Rehydration race guard (d935430)
+
+`_hasHydrated` flag prevents user from sending messages before IndexedDB
+persist middleware finishes loading (which would overwrite new data).
+
+---
+
+## Phase 16 — UI Polish
+
+### Warm terracotta palette (ec7b481, ef09da6)
+
+Claude.ai colors: `#faf9f5` cream, `#cc785c` coral primary, `#f3eadc` warm
+panels, `#ded2c0` hairlines.
+
+### Sidebar (cc51b79, c6998b9, 19a1f2e, 934b3bd, 77655c7, b2296cc)
+
+Overlay on narrow, inline on wide. Manual toggle locks preference.
+SSR hydration mismatch fixed.
+
+### Artifact toolbar (9765156, b35470b, 442de60)
+
+Hover-reveal with opacity transition. Lucide-react icons. Copy + download buttons.
+
+### Placeholder + code preview (4022298, a01c968)
+
+Animated "Generating..." with coral dots and expandable code preview during body state.
+
+### Scrollbars (5b48e42), RAF throttle (843adef), CDN vendor (51b4d72, 3ac4518, b760deb)
+
+6px warm scrollbars. RAF throttle for 60-80% fewer renders. All sandbox deps vendored.
+
+---
+
 ## Architecture Decisions
 
 1. **Provider registry split** — `index.ts` (server, imports SDKs) vs `registry.ts`
@@ -375,11 +470,35 @@ Prop chain: `ArtifactSandbox` → `SegmentRenderer` → `MessageBubble` →
    queryable), small model settings in localStorage (simple key-value). Both use
    Zustand `persist` middleware with `partialize` to exclude functions.
 
+8. **Stable message lifecycle** — Assistant message created in store before streaming.
+   rawContent synced into the same message via `useLayoutEffect`. Same React key
+   from creation through persistence — no iframe destroy/recreate, no CDN reload.
+
+9. **Intent-based prompt routing** — User messages classify as text or artifact via
+   keyword matching. Text path gets a shorter prompt, reducing token cost.
+
+10. **Lenient parser as defense-in-depth** — Prompt instructs models to write correct
+    tags, but parser handles common failure modes (malformed attributes, missing `>`).
+
+---
+
+## Model-Specific Issues
+
+| Model | Artifact tag quality | Code generation quality | Recommendation |
+|-------|---------------------|------------------------|----------------|
+| Claude 4.x | Excellent — follows format correctly | Excellent — valid JSX | Best for artifacts |
+| DeepSeek v4-pro | Poor — often omits `>`, `=`, or writes Chinese in `type` | Inconsistent — ~40% of responses have broken JSX | Use with parser fallbacks |
+| ModelScope Qwen | Good — usually correct format | Good — generally valid JSX | Reliable alternative |
+
 ---
 
 ## Known Limitations
 
+- DeepSeek artifact code generation quality is inconsistent — JSX syntax often
+  broken (missing `function` keyword, malformed object literals)
 - No mobile sidebar toggle: sidebar is hidden below `md` breakpoint with no hamburger
 - Artifact React sandbox: `export default` stripping is regex-based, may fail
   on complex export patterns
 - No authentication or multi-user support
+- Streaming → persisted iframe may still re-create when `</artifact>` arrives on
+  the same frame as `isStreaming → false` (rare edge case, React batching)
