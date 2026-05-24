@@ -41,8 +41,9 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
 
   const flushPending = useCallback(() => {
     if (pendingRef.current) {
-      setRawContent((prev) => prev + pendingRef.current);
+      const flushed = pendingRef.current;
       pendingRef.current = "";
+      setRawContent((prev) => prev + flushed);
     }
     rafRef.current = 0;
   }, []);
