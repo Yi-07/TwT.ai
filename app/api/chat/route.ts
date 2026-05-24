@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
   // Accumulate and append to file in background — never blocks the response
   const now = new Date();
   const model = providerId;
-  const timestamp = now.toISOString();
+  const tz8 = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  const timestamp = tz8.toISOString().replace("Z", "+08:00");
   const divider = "─".repeat(72);
 
   const header = [
