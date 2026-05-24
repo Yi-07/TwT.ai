@@ -57,23 +57,22 @@ export function ThemeToggle() {
   const isDark = theme === "dark";
   const ease = "cubic-bezier(0.4, 0, 0.2, 1)";
   const dur = "600ms";
-  const iconColor = isDark ? "#8C867D" : "#3D3D3A";
 
   return (
     <button
       onClick={toggle}
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
-      className="flex h-8 w-8 items-center justify-center rounded transition-colors hover:bg-canvas-soft active:scale-95 dark:hover:bg-surface-dark-elevated"
+      className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-canvas-soft active:scale-95 dark:hover:bg-surface-dark-elevated"
     >
       <svg
         viewBox="0 0 24 24"
-        className="h-5 w-5 overflow-visible"
-        style={{ color: iconColor }}
+        className="h-4 w-4 overflow-visible"
         aria-hidden="true"
       >
-        {/* Sun rays — 8 lines that rotate ccw + shrink into the centre */}
+        {/* Sun rays — rotate ccw + shrink into centre; amber warm gold */}
         <g
           style={{
+            color: "#E8A55A",
             transformOrigin: "12px 12px",
             transform: isDark
               ? "rotate(0deg) scale(1)"
@@ -90,7 +89,7 @@ export function ThemeToggle() {
               x2={12}
               y2={4.5}
               stroke="currentColor"
-              strokeWidth="1.75"
+              strokeWidth="1.5"
               strokeLinecap="round"
               style={{
                 transformOrigin: "12px 12px",
@@ -100,22 +99,22 @@ export function ThemeToggle() {
           ))}
         </g>
 
-        {/* Sun body — filled circle, fades out as crescent fades in */}
+        {/* Sun body — filled circle, warm amber */}
         <circle
           cx={12}
           cy={12}
           r={5}
-          fill="currentColor"
+          fill="#E8A55A"
           style={{
             opacity: isDark ? 1 : 0,
             transition: `opacity ${dur} ${ease}`,
           }}
         />
 
-        {/* Moon crescent — fades in as sun body fades out */}
+        {/* Moon crescent — terracotta coral */}
         <path
           d="M 12 7 A 5 5 0 0 0 12 17 A 4.5 4.5 0 0 1 12 7 Z"
-          fill="currentColor"
+          fill="#D97757"
           style={{
             opacity: isDark ? 0 : 1,
             transition: `opacity ${dur} ${ease}`,
