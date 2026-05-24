@@ -66,7 +66,7 @@ export function ThemeToggle() {
         <Sun
           size={15}
           strokeWidth={1.75}
-          className={`absolute text-accent-amber transition-all duration-500 ease-out ${
+          className={`absolute text-body transition-all duration-500 ease-out ${
             isDark
               ? "rotate-0 scale-100 opacity-100"
               : "rotate-90 scale-0 opacity-0"
