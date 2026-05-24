@@ -49,7 +49,7 @@ export function InputBar({ onSend, onStop, isStreaming, disabled }: InputBarProp
   );
 
   return (
-    <div className="shrink-0">
+    <div className="relative z-10 shrink-0">
       <div className="mx-auto flex max-w-3xl items-end gap-3 px-4 py-4">
         <textarea
           ref={textareaRef}
