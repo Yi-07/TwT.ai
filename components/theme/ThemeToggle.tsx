@@ -62,11 +62,11 @@ export function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
-      className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-canvas-soft active:scale-95 dark:hover:bg-surface-dark-elevated"
+      className="flex h-7 w-7 items-center justify-center rounded border border-hairline transition-colors hover:bg-canvas-soft active:scale-95 dark:hover:bg-surface-dark-elevated"
     >
       <svg
         viewBox="0 0 24 24"
-        className="h-4 w-4 text-muted-soft overflow-visible"
+        className="h-4 w-4 text-body overflow-visible"
         aria-hidden="true"
       >
         {/* Sun rays — 8 lines that rotate ccw + shrink into the centre */}
