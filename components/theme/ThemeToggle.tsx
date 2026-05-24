@@ -57,16 +57,18 @@ export function ThemeToggle() {
   const isDark = theme === "dark";
   const ease = "cubic-bezier(0.4, 0, 0.2, 1)";
   const dur = "600ms";
+  const iconColor = isDark ? "#8C867D" : "#3D3D3A";
 
   return (
     <button
       onClick={toggle}
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
-      className="flex h-7 w-7 items-center justify-center rounded border border-hairline transition-colors hover:bg-canvas-soft active:scale-95 dark:hover:bg-surface-dark-elevated"
+      className="flex h-8 w-8 items-center justify-center rounded transition-colors hover:bg-canvas-soft active:scale-95 dark:hover:bg-surface-dark-elevated"
     >
       <svg
         viewBox="0 0 24 24"
-        className="h-4 w-4 text-body overflow-visible"
+        className="h-5 w-5 overflow-visible"
+        style={{ color: iconColor }}
         aria-hidden="true"
       >
         {/* Sun rays — 8 lines that rotate ccw + shrink into the centre */}
@@ -88,7 +90,7 @@ export function ThemeToggle() {
               x2={12}
               y2={4.5}
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="1.75"
               strokeLinecap="round"
               style={{
                 transformOrigin: "12px 12px",
