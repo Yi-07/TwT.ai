@@ -447,6 +447,114 @@ Scrolling up to read history suppresses auto-scroll until user returns to bottom
 
 ---
 
+## Phase 17 — Dual Theme System
+
+### `feat: add dual-theme CSS architecture with data-theme attribute` (b4211b1)
+
+Replaced `@media (prefers-color-scheme: dark)` with `:root[data-theme="dark"]`
+and `@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *))`.
+This overrides Tailwind v4's built-in dark variant so all 11 existing components'
+`dark:*` utility classes respond to the `data-theme` attribute instead of the
+system media query — zero component changes needed.
+
+Added multi-color artifact tokens (comp-purple/green/orange/blue),
+theme-aware scrollbar colour variables, and `--color-code-block`.
+
+### `feat: add inline anti-flash script for theme initialization` (2d3cec1)
+
+Synchronous `<script>` in `app/layout.tsx` `<head>` reads `localStorage('twt-theme')`
+and sets `data-theme` on `<html>` before first paint — prevents FART (Flash of
+Auto-detected Right Theme). Defaults to `"dark"`.
+
+### `feat: add ThemeToggle component` (6f7ac99, ca873d4)
+
+Custom SVG mask morph icon in `components/theme/ThemeToggle.tsx`:
+- 8 sun rays + circle body + crescent mask
+- `transitionend`-driven three-stage serial animation
+  - sun→moon: rays fade ccw → body swells → mask bites crescent (~1300ms)
+  - moon→sun: mask retracts → body shrinks → rays expand cw (~1250ms)
+- `prevDark` ref + `mounted` dep guard prevents StrictMode double-fire corruption
+  and ensures re-initialisation on the first mounted render
+- Placed in ChatView top bar next to ModelSettings
+
+### `refactor: apply refined colour palette` (4fd223e, 8c90753, 0407d9a)
+
+Warm oatmeal/bone-china light palette (`#FBFBFA`, `#F7F5F0`, `#EBE8E0`)
+and cocoa-black dark palette (`#141312`, `#0A0A09`, `#262422`).
+User bubble becomes a light warm-grey capsule in light mode (`#F0EDE4`).
+Code blocks use theme-aware `bg-code-block` instead of hardcoded zinc colours.
+Asymmetric CSS transition: dusk 1200ms `cubic-bezier(0.4,0,0.6,1)`,
+dawn 1800ms `cubic-bezier(0.2,0,0.4,1)` — computed from CSS variable read
+at toggle moment, so light→dark reads 1200ms, dark→light reads 1800ms.
+
+### Theme toggle icon iterations (6bf1d78, 04ecb60, b8b9867, a05ee53)
+
+Icon evolved through: Lucide crossfade → custom SVG morph → Lucide dual-colour.
+Final form: custom SVG mask morph with `text-body` for both states.
+The morph uses CSS transition on `opacity` + `transform` on rays group,
+`r` attribute on body circle, and `r` attribute on mask circle.
+
+### View Transitions experiments (1c4e1ca, faabc08, 06ecb60)
+
+Three approaches tried and removed:
+1. **Ripple-out** (`clip-path: circle()`) — Chrome-only, boundary visible
+2. **Radial-gradient overlays** (dusk encircle / dawn bloom) — complex DOM lifecycle
+3. **Global CSS transition only** (current) — all colours self-transition,
+   no DOM manipulation, zero edge artifacts. The simplest, most natural approach.
+
+---
+## Phase 18 — Artifact System Refinements
+
+### `refactor: replace keyword intent routing with unified artifact prompt` (894e72e)
+
+Deleted `classifyIntent()` — 18-keyword heuristic with high false-positive rate
+("分析销售数据" missed, "画个简单流程图" over-triggered). `app/api/chat/route.ts`
+now always uses `SYSTEM_PROMPT_ARTIFACT`, whose decision framework lets the model
+judge text vs artifact based on context. `SYSTEM_PROMPT_TEXT` kept for future use.
+
+### `feat: expand artifact type roles` (5698733)
+
+All three artifact types now support interactivity + `window.sendPrompt()`:
+- `type="svg"`: native interactivity (links, hover, onclick, `<foreignObject>`)
+- `type="html"`: full JS+DOM, primary choice for forms/demos/simple tools
+- `type="react"`: complex state/charts (Recharts + ResponsiveContainer)
+
+Added system prompt sections: form→sendPrompt collection pattern,
+CHART STYLING rules (# prefix, 3:1 contrast, visible grid lines).
+
+### Sandbox error logging improvement (current)
+
+`window.addEventListener('error', ...)` + `console.error` proxy in sandbox
+sends full error details (message, stack, line number) via
+`postMessage({ type: 'sandbox-error', error })`. Parent component logs to console.
+
+### Recharts auto-injection (current)
+
+`prepareReactCode()` auto-injects destructuring of 21 Recharts components
+(`LineChart`, `ResponsiveContainer`, `AreaChart`, etc.) before user code.
+Prevents `ResponsiveContainer is not defined` errors from model-generated code
+that omits manual destructuring.
+
+### UI colour fixes for light mode (045af83, current)
+
+- ThemeToggle icon: `text-muted-soft` → `text-body` with hairline border
+- Code blocks: `[&_pre]:text-ink dark:[&_pre]:text-on-dark-soft` fixes
+  prose-zinc light text on light background
+- StreamingIndicator dots: `bg-muted` → `bg-body`
+- Placeholder text: `text-muted` → `text-body`, preview button `text-muted-soft` → `text-muted`
+- Placeholder preview area: `bg-surface-dark` → `bg-code-block` (theme-aware)
+- InputBar/ModelSettings inputs: added `transition-[border-color] duration-200`
+  to prevent 1200ms focus-border lag from global CSS transition
+
+### `fix: add mounted to effect dep array` (current)
+
+ThemeToggle's SVG init `useEffect` depended on `[isDark]` alone. When `isDark`
+didn't change between the unmounted (placeholder) and mounted (SVG-present)
+renders — which happens on dark-mode page refresh — the effect never fired and
+`applyFrame()` was never called, leaving the icon at its default JSX state
+(a small outlined circle). Added `mounted` to deps: `[isDark, mounted]`.
+
+---
 ## Architecture Decisions
 
 1. **Provider registry split** — `index.ts` (server, imports SDKs) vs `registry.ts`
@@ -479,8 +587,15 @@ Scrolling up to read history suppresses auto-scroll until user returns to bottom
    rawContent synced into the same message via `useLayoutEffect`. Same React key
    from creation through persistence — no iframe destroy/recreate, no CDN reload.
 
-9. **Intent-based prompt routing** — User messages classify as text or artifact via
-   keyword matching. Text path gets a shorter prompt, reducing token cost.
+9. **Intent-based prompt routing** (REMOVED) — Formerly used keyword matching
+   to route between text and artifact prompts. Replaced by unified prompt with
+   model-side decision framework. Keyword routing had higher misclassification cost
+   than the extra token cost of always using the artifact prompt.
+
+10. **Global CSS transition as theme engine** — Replaced View Transitions API
+    and overlay-based approaches. All elements transition `background-color`,
+    `color`, `border-color` with asymmetric durations (1200ms dusk / 1800ms dawn)
+    and non-linear easings. Zero DOM manipulation, full browser compatibility.
 
 10. **Lenient parser as defense-in-depth** — Prompt instructs models to write correct
     tags, but parser handles common failure modes (malformed attributes, missing `>`).
@@ -500,10 +615,17 @@ Scrolling up to read history suppresses auto-scroll until user returns to bottom
 ## Known Limitations
 
 - DeepSeek artifact code generation quality is inconsistent — JSX syntax often
-  broken (missing `function` keyword, malformed object literals)
+  broken (missing `function` keyword, malformed object literals, hex colours
+  missing `#` prefix)
+- Recharts charts generated by model may use invisible grid-line colours on
+  light backgrounds (`#e0e0e0` on white); system prompt now instructs otherwise
+  but model compliance is imperfect
 - No mobile sidebar toggle: sidebar is hidden below `md` breakpoint with no hamburger
 - Artifact React sandbox: `export default` stripping is regex-based, may fail
   on complex export patterns
 - No authentication or multi-user support
-- Streaming → persisted iframe may still re-create when `</artifact>` arrives on
-  the same frame as `isStreaming → false` (rare edge case, React batching)
+- Switching conversations during active streaming does not cancel the stream
+  (content arrives in the original conversation, wasting tokens)
+- Stacking multiple `ThemeToggle` instances on one page causes SVG `id` collisions
+  (`#crescent-mask`, `#mask-circle`, `#body`, `#rays` — currently safe as only
+  one toggle exists)

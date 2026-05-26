@@ -15,6 +15,9 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 - Per-model parameter settings (temperature, max tokens, system prompt)
 - Artifact system: model output parsed for `<artifact>` tags and rendered in a
   sandboxed iframe alongside the conversation
+- Dual-theme system (Warm Canvas light + Midnight dark) with
+  `data-theme` attribute, global CSS colour transitions (1200ms dusk / 1800ms dawn),
+  and SVG mask morph icon animation (sun ↔ crescent)
 - Persistent storage: conversations in IndexedDB, model settings in localStorage
 - Slow-response warning, stop button, and retry after error/cancel
 - sandbox → chat communication via `window.sendPrompt()` API
@@ -60,6 +63,8 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   ├── model/
 │   │   ├── ModelSwitcher.tsx       # Dropdown to switch active model
 │   │   └── ModelSettings.tsx       # temperature / maxTokens / systemPrompt panel
+│   ├── theme/
+│   │   └── ThemeToggle.tsx         # SVG mask morph icon + theme toggle with overlay
 │   └── artifact/
 │       ├── ArtifactSandbox.tsx     # iframe sandbox; handles srcdoc injection + postMessage
 │       └── ArtifactToolbar.tsx     # Toolbar above sandbox: title, refresh, expand button
@@ -241,6 +246,10 @@ can preserve component instances across streaming re-renders.
   - Sandbox → parent: `{ type: 'sendPrompt', text: string }`
   - Parent → sandbox: `{ type: 'theme', value: 'light' | 'dark' }`
 - Exposes `window.sendPrompt(text)` in sandbox global scope (injected before all other scripts)
+- `prepareReactCode()` auto-injects Recharts destructuring (21 components) to prevent
+  `ResponsiveContainer is not defined` errors from model-generated code
+- Error logging: `window.addEventListener('error', ...)` + `console.error` proxy
+  → `postMessage({ type: 'sandbox-error', error })` → parent logs full stack to console
 - Dependencies vendored in `public/vendor/` — no external CDN calls from sandbox:
   `react.umd.js`, `react-dom.umd.js`, `babel.min.js`, `recharts.umd.js`,
   `lodash.umd.js`, `prop-types.umd.js`
@@ -253,13 +262,18 @@ mouse hover; fully transparent by default to minimize visual noise.
 
 ### System prompt instruction for artifact output
 
-Defined in `lib/defaults.ts` — split into two prompts:
-- `SYSTEM_PROMPT_TEXT` — for plain text replies (forbids artifact tags)
-- `SYSTEM_PROMPT_ARTIFACT` — for artifact-enabled replies
+Defined in `lib/defaults.ts` — two prompts:
+- `SYSTEM_PROMPT_TEXT` — reserved for future pure-text mode (forbids artifact tags)
+- `SYSTEM_PROMPT_ARTIFACT` — unified prompt with decision framework:
+  model decides whether to output text-only or text+artifact based on context,
+  not keyword matching. Includes type selection guide (svg/html/react, all
+  interactive-capable), chart styling rules (# prefix, 3:1 contrast, visible
+  grid lines), and form→sendPrompt collection pattern.
 
-`app/api/chat/route.ts` uses `classifyIntent()` to select the prompt based on
-the user's last message (keyword matching: "画一个", "图表", "chart", etc.).
-The selected prompt is injected as the default system message.
+`app/api/chat/route.ts` always uses `SYSTEM_PROMPT_ARTIFACT`.
+`classifyIntent()` keyword routing was removed — the model's own judgement
+via the decision framework has lower misclassification cost than 18-keyword
+heuristics.
 
 ---
 
@@ -346,6 +360,27 @@ show a placeholder while code is being generated, then the iframe appears once
   can overlap the InputBar by a few pixels at the bottom. Without a
   stacking context, clicks in that zone go to the message area instead
   of the textarea.
+
+### SVG DOM Manipulation with React
+
+- **Ref values persist across StrictMode unmount/remount, DOM state does not.**
+  When React StrictMode unmounts and remounts a component, ref values survive
+  but SVG DOM elements are destroyed and recreated from JSX defaults. An init
+  guard based on ref state (e.g. `prevDark.current === null`) will fail on the
+  remount because the ref still holds the previous mount's value, but the DOM
+  is fresh. **Use DOM state for init guards** (`raysG.children.length === 0`),
+  not refs.
+
+- **`mounted` must be in the dependency array** when an effect initialises
+  SVG DOM that depends on the component being visible. If `useEffect` only
+  depends on `[isDark]` and `isDark` doesn't change between the unmounted
+  (placeholder) render and the mounted (SVG-present) render, the effect
+  won't re-fire. Add `mounted` to the dep array: `[isDark, mounted]`.
+
+- **Use `transitionend` events, not `setTimeout`, for serial SVG animation
+  stages.** setTimeout delay must match CSS transition duration exactly;
+  they drift apart under heavy load. `transitionend` fires when the browser
+  actually finishes the transition, regardless of timing.
 
 ### Model Output Quality (DeepSeek-specific)
 
