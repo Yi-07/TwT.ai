@@ -33,8 +33,13 @@ function prepareReactCode(code: string): string {
   const nameMatch = /(?:function|class)\s+(\w+)/.exec(noModule);
   const componentName = nameMatch ? nameMatch[1] : "App";
 
-  // Auto-inject hook destructuring so models can use bare hook calls
-  return `${REACT_HOOKS_INJECTION}
+  // Auto-inject hook + Recharts destructuring so models can use bare names
+  return `const { LineChart, BarChart, PieChart, Line, Bar, Pie,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, AreaChart, Area, Cell,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  Radar, ScatterChart, Scatter, ComposedChart } = Recharts;
+${REACT_HOOKS_INJECTION}
 ${noModule}
 ReactDOM.createRoot(document.getElementById('root')).render(
   React.createElement(${componentName})
@@ -85,9 +90,33 @@ ${SENDPROMPT_SCRIPT}
   #err { display:none; padding:16px; color:#dc2626; background:#fef2f2; font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-all; }
 </style>
 <script>
-  window.onerror = function(msg, src, line, col, err) {
+  window.addEventListener('error', function(e) {
+    var d = {
+      message: e.message || 'unknown',
+      filename: e.filename || '',
+      lineno: e.lineno,
+      colno: e.colno
+    };
+    try { d.stack = (e.error && e.error.stack) ? e.error.stack : ''; } catch(_) {}
+    parent.postMessage({ type: 'sandbox-error', error: d }, '*');
     var el = document.getElementById('err');
-    if (el) { el.style.display='block'; el.textContent = 'Error: ' + msg + '\\n at line ' + line; }
+    if (el) {
+      el.style.display = 'block';
+      el.textContent = 'Error: ' + d.message +
+        (d.stack ? '\\n\\n' + d.stack : '') +
+        (d.lineno ? '\\n(at line ' + d.lineno + ')' : '');
+    }
+  });
+  var _ce = console.error;
+  console.error = function() {
+    _ce.apply(console, arguments);
+    try {
+      parent.postMessage({ type: 'sandbox-error', error: {
+        message: Array.from(arguments).map(function(a) {
+          return typeof a === 'object' ? JSON.stringify(a) : String(a);
+        }).join(' ')
+      }}, '*');
+    } catch(e2) {}
   };
 <\/script>
 </head>
@@ -140,6 +169,14 @@ export function ArtifactSandbox({
       }
       if (e.data?.type === "sendPrompt" && typeof e.data.text === "string") {
         onSendPrompt?.(e.data.text);
+      }
+      if (e.data?.type === "sandbox-error" && e.data.error) {
+        console.error(
+          "[Sandbox Error]",
+          e.data.error.message,
+          e.data.error.stack || "",
+          e.data.error.lineno ? `(line ${e.data.error.lineno})` : "",
+        );
       }
     },
     [onSendPrompt],
