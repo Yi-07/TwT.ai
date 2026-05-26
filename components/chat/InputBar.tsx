@@ -1,17 +1,25 @@
 "use client";
 
-import { useState, useRef, useCallback, type KeyboardEvent } from "react";
+import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from "react";
 
 interface InputBarProps {
   onSend: (content: string) => void;
   onStop: () => void;
   isStreaming: boolean;
   disabled?: boolean;
+  draft?: string | null;
 }
 
-export function InputBar({ onSend, onStop, isStreaming, disabled }: InputBarProps) {
+export function InputBar({ onSend, onStop, isStreaming, disabled, draft }: InputBarProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (draft) {
+      setValue(draft);
+      textareaRef.current?.focus();
+    }
+  }, [draft]);
 
   const MAX_HEIGHT = 200;
 
@@ -62,7 +70,7 @@ export function InputBar({ onSend, onStop, isStreaming, disabled }: InputBarProp
           placeholder={disabled ? "Loading..." : "Send a message..."}
           rows={1}
           disabled={disabled}
-          className="flex-1 resize-none rounded-2xl border border-hairline bg-transparent px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:text-on-dark dark:placeholder:text-on-dark-soft dark:focus:border-primary"
+          className="flex-1 resize-none rounded-2xl border border-hairline bg-transparent px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:text-on-dark dark:placeholder:text-on-dark-soft dark:focus:border-primary transition-[border-color] duration-200"
         />
 
         {isStreaming ? (

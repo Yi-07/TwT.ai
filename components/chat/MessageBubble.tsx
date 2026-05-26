@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Copy, Pencil, RefreshCw } from "lucide-react";
 import type { Message } from "@/types/conversation";
 import type { Segment } from "@/types/artifact";
 import { ArtifactParser } from "@/lib/utils/parseArtifact";
@@ -44,7 +45,7 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
     return (
       <div className="my-3 rounded-lg border border-hairline bg-canvas-card px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted">
+          <span className="text-sm text-body">
             正在生成「{seg.title}」
           </span>
           <span className="flex items-center gap-1">
@@ -55,14 +56,14 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
           {hasPreview && (
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="ml-auto text-xs text-muted-soft underline underline-offset-2 hover:text-muted"
+              className="ml-auto text-xs text-muted underline underline-offset-2 hover:text-body"
             >
               {expanded ? "收起代码" : "点击查看"}
             </button>
           )}
         </div>
         {hasPreview && expanded && (
-          <pre className="mt-3 max-h-60 overflow-y-auto rounded-lg bg-surface-dark p-3 text-xs text-on-dark-soft">
+          <pre className="mt-3 max-h-60 overflow-y-auto rounded-lg bg-code-block p-3 text-xs text-ink dark:text-on-dark-soft">
             <code>{seg.preview}</code>
           </pre>
         )}
@@ -103,10 +104,29 @@ interface MessageBubbleProps {
   message: Message;
   streaming?: boolean;
   onSendPrompt?: (text: string) => void;
+  isLastUserMsg?: boolean;
+  hasError?: boolean;
+  onEdit?: (text: string) => void;
+  onRetry?: () => void;
 }
 
-export function MessageBubble({ message, streaming, onSendPrompt }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  streaming,
+  onSendPrompt,
+  isLastUserMsg,
+  hasError,
+  onEdit,
+  onRetry,
+}: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(message.content).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [message.content]);
 
   // Per-message parser instance — eliminates module-level singleton
   // interference when multiple messages render simultaneously.
@@ -128,14 +148,48 @@ export function MessageBubble({ message, streaming, onSendPrompt }: MessageBubbl
         }
       >
         {isUser ? (
-          <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
-            {message.content}
-          </p>
+          <div className="group">
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+              {message.content}
+            </p>
+            {/* Hover icons — Copy / Edit / Retry */}
+            <div className="mt-1.5 flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
+                {copied ? (
+                  <span className="text-[10px] font-medium">OK</span>
+                ) : (
+                  <Copy size={13} strokeWidth={1.5} />
+                )}
+              </button>
+              {onEdit && (
+                <button onClick={() => onEdit(message.content)} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Edit">
+                  <Pencil size={13} strokeWidth={1.5} />
+                </button>
+              )}
+              {isLastUserMsg && hasError && onRetry && (
+                <button onClick={onRetry} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Retry">
+                  <RefreshCw size={13} strokeWidth={1.5} />
+                </button>
+              )}
+            </div>
+          </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {segments.map((seg) => (
-              <SegmentRenderer key={seg.id} seg={seg} onSendPrompt={onSendPrompt} />
-            ))}
+          <div className="group">
+            <div className="flex flex-col gap-2">
+              {segments.map((seg) => (
+                <SegmentRenderer key={seg.id} seg={seg} onSendPrompt={onSendPrompt} />
+              ))}
+            </div>
+            {/* Hover Copy for assistant messages */}
+            <div className="mt-1.5 flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100">
+              <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
+                {copied ? (
+                  <span className="text-[10px] font-medium">OK</span>
+                ) : (
+                  <Copy size={13} strokeWidth={1.5} />
+                )}
+              </button>
+            </div>
           </div>
         )}
       </div>
