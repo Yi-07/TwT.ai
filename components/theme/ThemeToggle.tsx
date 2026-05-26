@@ -159,7 +159,7 @@ export function ThemeToggle() {
     } else {
       animateToSun(svg);
     }
-  }, [isDark]);
+  }, [isDark, mounted]);
 
   const toggle = useCallback(() => {
     const next = theme === "dark" ? "light" : "dark";
