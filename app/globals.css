@@ -30,8 +30,9 @@
   /* Asymmetric theme transition: light → dark (relaxing) = fast,
      dark → light (pupils dilate) = slow. Duration set per CURRENT theme
      so the switch TO the opposite uses the current theme's speed. */
-  --theme-transition-duration: 300ms;
-  --theme-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  /* light → dark: dusk-like, slow settle */
+  --theme-transition-duration: 1200ms;
+  --theme-transition-easing: cubic-bezier(0.4, 0, 0.6, 1);
 
   /* Scrollbar */
   --scrollbar-thumb: #EBE8E0;
@@ -59,7 +60,9 @@
   --background: #141312;
   --foreground: #E5E1DA;
 
-  --theme-transition-duration: 450ms;
+  /* dark → light: dawn-like, gentle unfolding */
+  --theme-transition-duration: 1800ms;
+  --theme-transition-easing: cubic-bezier(0.2, 0, 0.4, 1);
 
   --color-canvas: #141312;
   --color-canvas-soft: #0A0A09;
