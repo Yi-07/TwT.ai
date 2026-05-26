@@ -105,8 +105,7 @@ interface MessageBubbleProps {
   streaming?: boolean;
   onSendPrompt?: (text: string) => void;
   isLastUserMsg?: boolean;
-  hasError?: boolean;
-  onEdit?: (text: string) => void;
+  onEditSubmit?: (msgId: string, newText: string) => void;
   onRetry?: () => void;
 }
 
@@ -115,12 +114,30 @@ export function MessageBubble({
   streaming,
   onSendPrompt,
   isLastUserMsg,
-  hasError,
-  onEdit,
+  onEditSubmit,
   onRetry,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState("");
+
+  const handleEditStart = () => {
+    setEditText(message.content);
+    setEditing(true);
+  };
+
+  const handleEditDone = () => {
+    const trimmed = editText.trim();
+    if (trimmed && trimmed !== message.content) {
+      onEditSubmit?.(message.id, trimmed);
+    }
+    setEditing(false);
+  };
+
+  const handleEditCancel = () => {
+    setEditing(false);
+  };
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(message.content).catch(() => {});
@@ -136,24 +153,42 @@ export function MessageBubble({
     return parser.flush(!streaming);
   }, [message.content, streaming]);
 
-  return (
-    <div
-      className={`flex w-full animate-fade-in ${isUser ? "justify-end" : "justify-start"}`}
-    >
-      <div
-        className={
-          isUser
-            ? "max-w-[80%] rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-ink dark:text-on-dark"
-            : "w-full max-w-3xl px-4 py-2"
-        }
-      >
-        {isUser ? (
-          <div className="group">
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
-              {message.content}
-            </p>
-            {/* Hover icons — Copy / Edit / Retry */}
-            <div className="mt-1.5 flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+  if (isUser) {
+    return (
+      <div className="flex w-full animate-fade-in justify-end">
+        <div className="group flex max-w-[80%] flex-col items-end">
+          <div className="rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-ink dark:text-on-dark">
+            {editing ? (
+              <div className="flex flex-col gap-2">
+                <textarea
+                  className="w-full resize-none rounded-lg bg-canvas px-3 py-2 text-[15px] leading-relaxed text-ink outline-none"
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleEditDone();
+                    }
+                    if (e.key === "Escape") handleEditCancel();
+                  }}
+                  rows={3}
+                  autoFocus
+                />
+                <div className="flex items-center gap-2 text-xs text-muted-soft">
+                  <span>Enter · send</span>
+                  <span>Shift+Enter · newline</span>
+                  <span>Esc · cancel</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                {message.content}
+              </p>
+            )}
+          </div>
+          {/* Hover icons — Copy / Edit / Retry */}
+          {!editing && (
+            <div className="mt-1 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
               <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
                 {copied ? (
                   <span className="text-[10px] font-medium">OK</span>
@@ -161,37 +196,43 @@ export function MessageBubble({
                   <Copy size={13} strokeWidth={1.5} />
                 )}
               </button>
-              {onEdit && (
-                <button onClick={() => onEdit(message.content)} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Edit">
+              {onEditSubmit && (
+                <button onClick={handleEditStart} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Edit">
                   <Pencil size={13} strokeWidth={1.5} />
                 </button>
               )}
-              {isLastUserMsg && hasError && onRetry && (
+              {isLastUserMsg && onRetry && (
                 <button onClick={onRetry} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Retry">
                   <RefreshCw size={13} strokeWidth={1.5} />
                 </button>
               )}
             </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full animate-fade-in justify-start">
+      <div className="w-full max-w-3xl px-4 py-2">
+        <div className="group">
+          <div className="flex flex-col gap-2">
+            {segments.map((seg) => (
+              <SegmentRenderer key={seg.id} seg={seg} onSendPrompt={onSendPrompt} />
+            ))}
           </div>
-        ) : (
-          <div className="group">
-            <div className="flex flex-col gap-2">
-              {segments.map((seg) => (
-                <SegmentRenderer key={seg.id} seg={seg} onSendPrompt={onSendPrompt} />
-              ))}
-            </div>
-            {/* Hover Copy for assistant messages */}
-            <div className="mt-1.5 flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100">
-              <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
-                {copied ? (
-                  <span className="text-[10px] font-medium">OK</span>
-                ) : (
-                  <Copy size={13} strokeWidth={1.5} />
-                )}
-              </button>
-            </div>
+          {/* Hover Copy for assistant messages */}
+          <div className="mt-1.5 flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100">
+            <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
+              {copied ? (
+                <span className="text-[10px] font-medium">OK</span>
+              ) : (
+                <Copy size={13} strokeWidth={1.5} />
+              )}
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

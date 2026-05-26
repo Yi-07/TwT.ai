@@ -55,6 +55,17 @@ export function useConversation() {
     [updateMessage],
   );
 
+  const updateUserMessage = useCallback(
+    (conversationId: string, msgId: string, content: string) => {
+      updateMessage(conversationId, msgId, content);
+    },
+    [updateMessage],
+  );
+
+  const removeLastAssistantMessage = useConversationStore(
+    (s) => s.removeLastAssistantMessage,
+  );
+
   const appendAssistantMessage = useCallback(
     (conversationId: string, content: string) => {
       const msg: Message = {
@@ -78,6 +89,8 @@ export function useConversation() {
     sendMessage,
     createAssistantMessage,
     updateAssistantMessage,
+    updateUserMessage,
+    removeLastAssistantMessage,
     appendAssistantMessage,
   };
 }

@@ -12,6 +12,7 @@ import { ModelSettings } from "@/components/model/ModelSettings";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { MessageList } from "./MessageList";
 import { InputBar } from "./InputBar";
+import { X, RefreshCw } from "lucide-react";
 
 interface ChatViewProps {
   conversationId: string;
@@ -28,6 +29,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
     sendMessage,
     createAssistantMessage,
     updateAssistantMessage,
+    updateUserMessage,
+    removeLastAssistantMessage,
   } = useConversation();
 
   const activeModelId = useModelStore((s) => s.activeModelId);
@@ -73,6 +76,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const hasHydrated = useConversationStore((s) => s._hasHydrated);
 
+  const [toast, setToast] = useState<{
+    message: string;
+    showRetry: boolean;
+  } | null>(null);
+
   const lastUserMessageRef = useRef<string>("");
   const assistantMsgIdRef = useRef<string>("");
   const activeConvIdRef = useRef<string>("");
@@ -105,18 +113,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
     updateAssistantMessage(cId, msgId, rawContent);
   }, [rawContent, updateAssistantMessage]);
 
-  const handleSend = useCallback(
-    (content: string) => {
-      lastUserMessageRef.current = content;
-
-      const cId = sendMessage(content);
-      activeConvIdRef.current = cId;
-      if (cId !== activeId) {
-        router.replace(`/c/${cId}`);
-      }
-
-      // Create an empty assistant message before streaming starts.
-      // Its id stays stable through the entire stream lifecycle.
+  const doSend = useCallback(
+    (cId: string) => {
       const msgId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       assistantMsgIdRef.current = msgId;
       createAssistantMessage(cId, msgId);
@@ -129,20 +127,47 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
       send(messages);
     },
-    [
-      sendMessage,
-      activeId,
-      createAssistantMessage,
-      send,
-      router,
-    ],
+    [createAssistantMessage, send],
+  );
+
+  const handleSend = useCallback(
+    (content: string) => {
+      lastUserMessageRef.current = content;
+      setToast(null);
+
+      const cId = sendMessage(content);
+      activeConvIdRef.current = cId;
+      if (cId !== activeId) {
+        router.replace(`/c/${cId}`);
+      }
+
+      doSend(cId);
+    },
+    [sendMessage, activeId, doSend, router],
   );
 
   const handleRetry = useCallback(() => {
-    const content = lastUserMessageRef.current;
-    if (!content) return;
-    handleSend(content);
-  }, [handleSend]);
+    abort();
+    const cId = activeConvIdRef.current;
+    if (cId) removeLastAssistantMessage(cId);
+    if (cId) doSend(cId);
+  }, [doSend, removeLastAssistantMessage, abort]);
+
+  const handleEditSubmit = useCallback(
+    (msgId: string, newText: string) => {
+      abort();
+      lastUserMessageRef.current = newText;
+      const cId = activeConvIdRef.current;
+      if (cId) {
+        updateUserMessage(cId, msgId, newText);
+        removeLastAssistantMessage(cId);
+        doSend(cId);
+      }
+    },
+    [doSend, updateUserMessage, removeLastAssistantMessage, abort],
+  );
+
+  const dismissToast = useCallback(() => setToast(null), []);
 
   const handleSendPrompt = useCallback(
     (text: string) => {
@@ -158,8 +183,20 @@ export function ChatView({ conversationId }: ChatViewProps) {
   const wasCancelled =
     !isStreaming && !hasError && lastUserMessageRef.current && !rawContent;
 
-  const showRetry =
-    !isStreaming && lastUserMessageRef.current;
+  // Sync error / cancelled into toast
+  useEffect(() => {
+    if (hasError) {
+      setToast({
+        message: `Response failed — ${error}`,
+        showRetry: true,
+      });
+    } else if (wasCancelled) {
+      setToast({
+        message: "Response cancelled.",
+        showRetry: true,
+      });
+    }
+  }, [hasError, wasCancelled, error]);
 
   // StreamingIndicator shows while waiting for the first chunk
   const waitingForFirstChunk =
@@ -199,6 +236,29 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
       {/* Main content */}
       <div className="relative flex min-h-0 flex-1 flex-col min-w-0">
+
+        {/* Toast — error / cancelled notification */}
+        {toast && (
+          <div className="fixed top-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-hairline bg-canvas px-4 py-2.5 text-sm text-body shadow-sm dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark">
+            <span>{toast.message}</span>
+            {toast.showRetry && (
+              <button
+                onClick={() => { dismissToast(); handleRetry(); }}
+                className="flex items-center gap-1 rounded px-2 py-1 text-primary transition-colors hover:bg-canvas-soft dark:hover:bg-surface-dark"
+              >
+                <RefreshCw size={14} strokeWidth={1.5} />
+                <span className="text-xs">Retry</span>
+              </button>
+            )}
+            <button
+              onClick={dismissToast}
+              className="flex items-center justify-center rounded p-0.5 text-muted-soft transition-colors hover:text-body"
+            >
+              <X size={14} strokeWidth={1.5} />
+            </button>
+          </div>
+        )}
+
         {/* Top bar */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-4 dark:border-hairline">
           <div className="flex items-center gap-2">
@@ -227,29 +287,9 @@ export function ChatView({ conversationId }: ChatViewProps) {
           streaming={isStreaming}
           isSlow={isSlowResponse}
           onSendPrompt={handleSendPrompt}
+          onEditSubmit={handleEditSubmit}
+          onRetry={handleRetry}
         />
-
-        {/* Error banner */}
-        {hasError && (
-          <div className="mx-auto mb-2 w-full max-w-3xl rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
-            Response failed — {error}
-            {showRetry && (
-              <button onClick={handleRetry} className="ml-2 underline font-medium">
-                Retry
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Cancelled banner */}
-        {wasCancelled && (
-          <div className="mx-auto mb-2 w-full max-w-3xl rounded-lg bg-canvas-soft px-4 py-2 text-sm text-muted dark:bg-surface-dark-elevated dark:text-muted-soft">
-            Response cancelled.
-            <button onClick={handleRetry} className="ml-2 underline font-medium text-primary hover:text-primary-active">
-              Retry
-            </button>
-          </div>
-        )}
 
         {/* Input */}
         <InputBar

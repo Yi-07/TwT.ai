@@ -1,25 +1,17 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from "react";
+import { useState, useRef, useCallback, type KeyboardEvent } from "react";
 
 interface InputBarProps {
   onSend: (content: string) => void;
   onStop: () => void;
   isStreaming: boolean;
   disabled?: boolean;
-  draft?: string | null;
 }
 
-export function InputBar({ onSend, onStop, isStreaming, disabled, draft }: InputBarProps) {
+export function InputBar({ onSend, onStop, isStreaming, disabled }: InputBarProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (draft) {
-      setValue(draft);
-      textareaRef.current?.focus();
-    }
-  }, [draft]);
 
   const MAX_HEIGHT = 200;
 

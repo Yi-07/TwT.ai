@@ -11,6 +11,8 @@ interface MessageListProps {
   streaming?: boolean;
   isSlow: boolean;
   onSendPrompt?: (text: string) => void;
+  onEditSubmit?: (msgId: string, newText: string) => void;
+  onRetry?: () => void;
 }
 
 export function MessageList({
@@ -19,7 +21,11 @@ export function MessageList({
   streaming,
   isSlow,
   onSendPrompt,
+  onEditSubmit,
+  onRetry,
 }: MessageListProps) {
+
+  const lastUserIdx = [...messages].reverse().findIndex((m) => m.role === "user");
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -57,8 +63,16 @@ export function MessageList({
       className="min-h-0 flex-1 overflow-y-auto px-4 py-6"
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} streaming={streaming} onSendPrompt={onSendPrompt} />
+        {messages.map((msg, i) => (
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            streaming={streaming}
+            onSendPrompt={onSendPrompt}
+            isLastUserMsg={i === messages.length - 1 - lastUserIdx}
+            onEditSubmit={onEditSubmit}
+            onRetry={onRetry}
+          />
         ))}
         {isStreaming && <StreamingIndicator isSlow={isSlow} />}
         <div ref={bottomRef} />

@@ -22,6 +22,7 @@ interface ConversationState {
     content: string,
   ) => void;
   updateTitle: (id: string, title: string) => void;
+  removeLastAssistantMessage: (conversationId: string) => void;
   getActive: () => Conversation | undefined;
   _hasHydrated: boolean;
   setHasHydrated: (value: boolean) => void;
@@ -107,6 +108,22 @@ export const useConversationStore = create<ConversationState>()(
                 }
               : c,
           ),
+        }));
+      },
+
+      removeLastAssistantMessage: (conversationId: string) => {
+        set((s) => ({
+          conversations: s.conversations.map((c) => {
+            if (c.id !== conversationId) return c;
+            const lastIdx = [...c.messages].reverse().findIndex((m) => m.role === "assistant");
+            if (lastIdx === -1) return c;
+            const targetIdx = c.messages.length - 1 - lastIdx;
+            return {
+              ...c,
+              messages: c.messages.slice(0, targetIdx),
+              updatedAt: Date.now(),
+            };
+          }),
         }));
       },
 
