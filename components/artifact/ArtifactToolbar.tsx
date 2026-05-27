@@ -6,18 +6,15 @@ import {
   Check,
   Download,
   RefreshCw,
-  ChevronDown,
 } from "lucide-react";
 import type { ArtifactType } from "@/types/artifact";
 
 interface ArtifactToolbarProps {
   title: string;
-  expanded: boolean;
   visible: boolean;
   content: string;
   artifactType: ArtifactType;
   onRefresh: () => void;
-  onToggleExpand: () => void;
 }
 
 const EXT_MAP: Record<ArtifactType, string> = {
@@ -51,12 +48,10 @@ const btnClass =
 
 export function ArtifactToolbar({
   title,
-  expanded,
   visible,
   content,
   artifactType,
   onRefresh,
-  onToggleExpand,
 }: ArtifactToolbarProps) {
   const [copied, setCopied] = useState(false);
 
@@ -98,19 +93,6 @@ export function ArtifactToolbar({
 
       <button onClick={onRefresh} className={btnClass} aria-label="Refresh artifact">
         <RefreshCw size={14} className="text-muted-soft dark:text-on-dark-soft" />
-      </button>
-
-      <button
-        onClick={onToggleExpand}
-        className={btnClass}
-        aria-label={expanded ? "Collapse artifact" : "Expand artifact"}
-      >
-        <ChevronDown
-          size={14}
-          className={`text-muted-soft transition-transform dark:text-on-dark-soft ${
-            expanded ? "rotate-180" : ""
-          }`}
-        />
       </button>
     </div>
   );

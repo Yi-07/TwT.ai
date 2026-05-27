@@ -7,7 +7,7 @@ interface ArtifactSandboxProps {
   artifactType: ArtifactType;
   title: string;
   content: string;
-  expanded: boolean;
+  expanded?: boolean;
   onSendPrompt?: (text: string) => void;
 }
 
@@ -15,25 +15,18 @@ const REACT_HOOKS_INJECTION =
   "const { useState, useEffect, useRef, useMemo, useCallback, useReducer, useContext, useId } = React;";
 
 function prepareReactCode(code: string): string {
-  // Strip import and export statements — React/ReactDOM/hooks are global UMD,
-  // and Babel Standalone runs in non-module mode where export is a syntax error.
   const noModule = code
     .split("\n")
     .filter((line) => !/^\s*import\s/.test(line))
-    // Remove model-generated hook destructure — we inject our own below
     .filter((line) => !/^\s*const\s*\{[^}]*\}\s*=\s*React\s*;?\s*$/.test(line.trim()))
     .join("\n")
-    // Remove export { ... } re-exports entirely
     .replace(/^\s*export\s*\{[^}]*\}\s*;?\s*$/gm, "")
-    // Strip "export default" / "export" keyword, keep the declaration
     .replace(/^\s*export\s+(default\s+)?/gm, "")
     .trim();
 
-  // Extract the component name from the default export
   const nameMatch = /(?:function|class)\s+(\w+)/.exec(noModule);
   const componentName = nameMatch ? nameMatch[1] : "App";
 
-  // Auto-inject hook + Recharts destructuring so models can use bare names
   return `const { LineChart, BarChart, PieChart, Line, Bar, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, AreaChart, Area, Cell,
@@ -49,6 +42,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 const SENDPROMPT_SCRIPT =
   "<script>window.sendPrompt=function(t){window.parent.postMessage({type:'sendPrompt',text:t},'*')}<\/script>";
 
+const RESIZE_SCRIPT =
+  "<script>var _lh=0;function _rh(){var h=document.documentElement.scrollHeight;if(h!==_lh){_lh=h;parent.postMessage({type:'resize',height:Math.max(h,100)},'*');}}if(window.ResizeObserver){new ResizeObserver(function(){_rh();}).observe(document.documentElement);}_rh();<\/script>";
+
 const CDN_WHITELIST = [
   "https://unpkg.com/",
   "https://cdn.jsdelivr.net/",
@@ -58,16 +54,27 @@ const CDN_WHITELIST = [
 function buildSrcdoc(type: ArtifactType, code: string): string {
   switch (type) {
     case "html":
+      if (/<body[^>]*style=/.test(code)) {
+        code = code.replace(
+          /(<body[^>]*style=")([^"]*)(")/i,
+          "$1overflow:hidden;$2$3",
+        );
+      } else {
+        code = code.replace(
+          /<body([^>]*)>/i,
+          (_, attrs) => `<body${attrs} style="overflow:hidden">`,
+        );
+      }
       return code.replace(
-        /<body[^>]*>/i,
-        (match) => `${match}${SENDPROMPT_SCRIPT}`,
+        /<\/body>/i,
+        `${SENDPROMPT_SCRIPT}${RESIZE_SCRIPT}</body>`,
       );
 
     case "svg":
       return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;}</style></head>
-<body>${SENDPROMPT_SCRIPT}${code}</body>
+<body>${SENDPROMPT_SCRIPT}${code}${RESIZE_SCRIPT}</body>
 </html>`;
 
     case "react": {
@@ -85,7 +92,7 @@ ${SENDPROMPT_SCRIPT}
 <script src="/vendor/lodash.umd.js"><\/script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, sans-serif; }
+  body { font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
   #root { min-height: 100vh; }
   #err { display:none; padding:16px; color:#dc2626; background:#fef2f2; font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-all; }
 </style>
@@ -126,12 +133,7 @@ ${SENDPROMPT_SCRIPT}
 <script type="text/babel">
 ${prepared}
 <\/script>
-<script>
-  setTimeout(function() {
-    var h = document.documentElement.scrollHeight;
-    parent.postMessage({ type: 'resize', height: Math.max(h, 100) }, '*');
-  }, 150);
-<\/script>
+${RESIZE_SCRIPT}
 </body>
 </html>`;
     }
@@ -145,13 +147,13 @@ export function ArtifactSandbox({
   artifactType,
   title,
   content,
-  expanded,
+  expanded: _expanded,
   onSendPrompt,
 }: ArtifactSandboxProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [contentHeight, setContentHeight] = useState(300);
 
-  const height = expanded ? Math.max(contentHeight, 800) : contentHeight;
+  const height = contentHeight;
 
   const srcdoc = buildSrcdoc(artifactType, content);
 
@@ -193,7 +195,7 @@ export function ArtifactSandbox({
       sandbox="allow-scripts"
       srcDoc={srcdoc}
       title={title}
-      className="w-full border-t border-hairline dark:border-hairline"
+      className="w-full overflow-hidden border-t border-hairline dark:border-hairline"
       style={{ height }}
     />
   );
