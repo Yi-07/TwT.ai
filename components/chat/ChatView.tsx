@@ -12,6 +12,8 @@ import { ModelSettings } from "@/components/model/ModelSettings";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { MessageList } from "./MessageList";
 import { InputBar } from "./InputBar";
+import { AskCard } from "./AskCard";
+import { parseAskCard } from "@/lib/utils/parseAskCard";
 import { X, RefreshCw } from "lucide-react";
 
 interface ChatViewProps {
@@ -76,6 +78,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const hasHydrated = useConversationStore((s) => s._hasHydrated);
 
+  const [askDismissed, setAskDismissed] = useState(false);
+
   const [toast, setToast] = useState<{
     message: string;
     showRetry: boolean;
@@ -115,6 +119,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const doSend = useCallback(
     (cId: string) => {
+      activeConvIdRef.current = cId;
       const msgId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       assistantMsgIdRef.current = msgId;
       createAssistantMessage(cId, msgId);
@@ -134,6 +139,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
     (content: string) => {
       lastUserMessageRef.current = content;
       setToast(null);
+      setAskDismissed(false);
 
       const cId = sendMessage(content);
       activeConvIdRef.current = cId;
@@ -148,23 +154,25 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const handleRetry = useCallback(() => {
     abort();
-    const cId = activeConvIdRef.current;
+    setAskDismissed(false);
+    const cId = activeId;
     if (cId) removeLastAssistantMessage(cId);
     if (cId) doSend(cId);
-  }, [doSend, removeLastAssistantMessage, abort]);
+  }, [activeId, doSend, removeLastAssistantMessage, abort]);
 
   const handleEditSubmit = useCallback(
     (msgId: string, newText: string) => {
       abort();
+      setAskDismissed(false);
       lastUserMessageRef.current = newText;
-      const cId = activeConvIdRef.current;
+      const cId = activeId;
       if (cId) {
         updateUserMessage(cId, msgId, newText);
         removeLastAssistantMessage(cId);
         doSend(cId);
       }
     },
-    [doSend, updateUserMessage, removeLastAssistantMessage, abort],
+    [activeId, doSend, updateUserMessage, removeLastAssistantMessage, abort],
   );
 
   const dismissToast = useCallback(() => setToast(null), []);
@@ -182,6 +190,15 @@ export function ChatView({ conversationId }: ChatViewProps) {
   const hasError = !!error;
   const wasCancelled =
     !isStreaming && !hasError && lastUserMessageRef.current && !rawContent;
+
+  // Detect <ask_user> block in the last assistant message
+  const askCardData =
+    !askDismissed &&
+    !isStreaming &&
+    !hasError &&
+    lastMsg?.role === "assistant"
+      ? parseAskCard(lastMsg.content)
+      : null;
 
   // Sync error / cancelled into toast
   useEffect(() => {
@@ -290,6 +307,19 @@ export function ChatView({ conversationId }: ChatViewProps) {
           onEditSubmit={handleEditSubmit}
           onRetry={handleRetry}
         />
+
+        {/* Ask card — model wants to collect user input */}
+        {askCardData && (
+          <div className="shrink-0 px-4 pb-2">
+            <AskCard
+              questions={askCardData.questions}
+              onSelect={(text) => {
+                handleSend(text);
+              }}
+              onDismiss={() => setAskDismissed(true)}
+            />
+          </div>
+        )}
 
         {/* Input */}
         <InputBar

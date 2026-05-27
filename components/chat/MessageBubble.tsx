@@ -26,10 +26,6 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
     setRefreshKey((k) => k + 1);
   }, []);
 
-  const handleToggleExpand = useCallback(() => {
-    setExpanded((prev) => !prev);
-  }, []);
-
   if (seg.type === "text") {
     return (
       <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-code-block [&_pre]:text-ink dark:[&_pre]:text-on-dark-soft [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-code-block [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_table]:w-full [&_th]:border [&_th]:border-hairline [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-hairline [&_td]:px-3 [&_td]:py-2">
@@ -73,25 +69,23 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
 
   return (
     <div
-      className="mt-4 border-l-2 border-hairline pl-3 dark:border-hairline"
+      className="mt-4 border-t border-hairline pt-3"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <ArtifactToolbar
         title={seg.title}
-        expanded={expanded}
         visible={hovered}
         content={seg.content}
         artifactType={seg.artifactType}
         onRefresh={handleRefresh}
-        onToggleExpand={handleToggleExpand}
       />
       <ArtifactSandbox
         key={refreshKey}
         artifactType={seg.artifactType}
         title={seg.title}
         content={seg.content}
-        expanded={expanded}
+        expanded={true}
         onSendPrompt={onSendPrompt}
       />
     </div>
@@ -147,9 +141,11 @@ export function MessageBubble({
 
   // Per-message parser instance — eliminates module-level singleton
   // interference when multiple messages render simultaneously.
+  // Strip <ask_user> blocks so they don't render as raw JSON in the bubble.
+  const cleanContent = message.content.replace(/<ask_user>[\s\S]*?<\/ask_user>/g, "");
   const segments = useMemo(() => {
     const parser = new ArtifactParser();
-    parser.parse(message.content);
+    parser.parse(cleanContent);
     return parser.flush(!streaming);
   }, [message.content, streaming]);
 
@@ -191,7 +187,7 @@ export function MessageBubble({
             <div className="mt-1 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
               <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
                 {copied ? (
-                  <span className="text-[10px] font-medium">OK</span>
+                  <span className="text-[10px] font-medium">✓</span>
                 ) : (
                   <Copy size={13} strokeWidth={1.5} />
                 )}
@@ -226,7 +222,7 @@ export function MessageBubble({
           <div className="mt-1.5 flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100">
             <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
               {copied ? (
-                <span className="text-[10px] font-medium">OK</span>
+                <span className="text-[10px] font-medium">✓</span>
               ) : (
                 <Copy size={13} strokeWidth={1.5} />
               )}
