@@ -2,6 +2,8 @@
 
 Multi-model AI chat frontend inspired by claude.ai. Switch between Claude, DeepSeek, ModelScope, and custom providers with persistent conversation history, streaming responses, per-model settings, and an Artifact system that renders interactive HTML/React/SVG views inline.
 
+[中文文档](README.zh-CN.md)
+
 ## Features
 
 - **Multi-model** — Claude, DeepSeek, ModelScope, and custom OpenAI-compatible providers
