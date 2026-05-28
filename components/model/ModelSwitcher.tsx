@@ -51,7 +51,7 @@ export function ModelSwitcher({ providers }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-hairline bg-canvas py-1 shadow-lg dark:border-hairline dark:bg-surface-dark">
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-44 rounded-xl border border-hairline bg-canvas py-1 shadow-lg dark:border-hairline dark:bg-surface-dark">
           {providers.map((p) => (
             <button
               key={p.id}
@@ -59,7 +59,7 @@ export function ModelSwitcher({ providers }: Props) {
                 setActiveModel(p.id);
                 setOpen(false);
               }}
-              className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-canvas-soft dark:hover:bg-surface-dark-elevated ${
+              className={`flex w-full items-center gap-2 whitespace-nowrap px-3 py-2 text-sm transition-colors hover:bg-canvas-soft dark:hover:bg-surface-dark-elevated ${
                 p.id === activeModelId
                   ? "font-medium text-ink dark:text-on-dark"
                   : "text-muted dark:text-on-dark-soft"
