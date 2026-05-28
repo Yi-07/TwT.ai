@@ -1,17 +1,8 @@
-export interface ProviderMeta {
-  id: string;
-  name: string;
-}
+import type { ProviderConfig } from "./config";
 
-const providerMetaList: ProviderMeta[] = [
-  { id: "claude", name: "Claude" },
-  { id: "deepseek", name: "DeepSeek" },
-  { id: "modelscope", name: "ModelScope" },
-];
+export type ProviderMeta = Pick<ProviderConfig, "id" | "name">;
 
-export function getProviderMetas(): ProviderMeta[] {
-  return providerMetaList;
-}
+export { getProviderMetas } from "./config";
 
 export function getDefaultModel(): string {
   return process.env.NEXT_PUBLIC_DEFAULT_PROVIDER || "deepseek";

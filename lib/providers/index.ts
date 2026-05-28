@@ -1,41 +1,40 @@
 import type { ModelProvider } from "@/types/provider";
 import { ClaudeProvider } from "./claude";
-import { DeepSeekProvider } from "./deepseek";
-import { ModelScopeProvider } from "./modelscope";
-import { type ProviderMeta, getProviderMetas } from "./registry";
+import { OpenAICompatibleProvider } from "./generic";
+import {
+  getProviderConfigs,
+  getProviderMetas,
+  type ProviderConfig,
+} from "./config";
 
-const providerConstructors: Record<
-  string,
-  new () => ModelProvider
-> = {
-  claude: ClaudeProvider,
-  deepseek: DeepSeekProvider,
-  modelscope: ModelScopeProvider,
-};
-
-export { type ProviderMeta, getProviderMetas };
+export { type ProviderConfig, getProviderMetas };
 
 const providerCache = new Map<string, ModelProvider>();
+
+function createProvider(config: ProviderConfig): ModelProvider {
+  switch (config.type) {
+    case "anthropic":
+      return new ClaudeProvider(config);
+    case "openai-compatible":
+      return new OpenAICompatibleProvider(config);
+  }
+}
 
 export function getProvider(id: string): ModelProvider {
   const cached = providerCache.get(id);
   if (cached) return cached;
 
-  const Ctor = providerConstructors[id];
-  if (!Ctor) {
+  const config = getProviderConfigs().find((c) => c.id === id);
+  if (!config) {
+    const available = getProviderConfigs()
+      .map((c) => c.id)
+      .join(", ");
     throw new Error(
-      `Unknown provider: "${id}". Available: ${Object.keys(providerConstructors).join(", ")}`,
+      `Unknown provider: "${id}". Available: ${available}`,
     );
   }
 
-  const instance = new Ctor();
+  const instance = createProvider(config);
   providerCache.set(id, instance);
   return instance;
-}
-
-export function listProviders(): Array<{ id: string; name: string }> {
-  return Object.keys(providerConstructors).map((id) => {
-    const provider = getProvider(id);
-    return { id: provider.id, name: provider.name };
-  });
 }

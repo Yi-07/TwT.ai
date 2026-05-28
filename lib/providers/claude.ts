@@ -1,20 +1,23 @@
 import type { Message } from "@/types/conversation";
 import type { ModelOptions } from "@/types/provider";
+import type { ProviderConfig } from "./config";
 import { BaseProvider } from "./base";
 import Anthropic from "@anthropic-ai/sdk";
 
 export class ClaudeProvider extends BaseProvider {
   id = "claude";
   name = "Claude";
-  protected defaultModel = process.env.CLAUDE_MODEL || "claude-sonnet-4-6";
+  protected defaultModel: string;
   protected apiKey: string;
-  protected baseUrl = process.env.CLAUDE_BASE_URL || "https://api.anthropic.com";
+  protected baseUrl: string;
 
   private client: Anthropic;
 
-  constructor(apiKey?: string) {
+  constructor(config: ProviderConfig) {
     super();
-    this.apiKey = apiKey ?? process.env.ANTHROPIC_API_KEY ?? "";
+    this.apiKey = config.apiKey;
+    this.baseUrl = config.baseUrl;
+    this.defaultModel = config.model;
     this.client = new Anthropic({ apiKey: this.apiKey, baseURL: this.baseUrl });
   }
 
