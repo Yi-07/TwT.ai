@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { MessageList } from "./MessageList";
 import { InputBar } from "./InputBar";
 import { AskCard } from "./AskCard";
+import { DebugPanel } from "@/components/debug/DebugPanel";
 import { parseAskCard } from "@/lib/utils/parseAskCard";
 import { X, RefreshCw } from "lucide-react";
 
@@ -200,6 +201,12 @@ export function ChatView({ conversationId }: ChatViewProps) {
       ? parseAskCard(lastMsg.content)
       : null;
 
+  const showAskLoading =
+    isStreaming &&
+    lastMsg?.role === "assistant" &&
+    /<ask_user>/i.test(lastMsg.content) &&
+    !/<\/ask_user>/i.test(lastMsg.content);
+
   // Sync error / cancelled into toast
   useEffect(() => {
     if (hasError) {
@@ -308,13 +315,31 @@ export function ChatView({ conversationId }: ChatViewProps) {
           onRetry={handleRetry}
         />
 
+        {/* Ask loading indicator — model is generating options */}
+        {showAskLoading && (
+          <div className="shrink-0 px-4 pb-2">
+            <div className="mx-auto flex w-full max-w-[680px] items-center gap-2 rounded-lg border border-hairline bg-canvas px-4 py-2.5 text-sm text-muted dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark-soft">
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
+              </span>
+              正在生成选项...
+            </div>
+          </div>
+        )}
+
         {/* Ask card — model wants to collect user input */}
         {askCardData && (
           <div className="shrink-0 px-4 pb-2">
             <AskCard
               questions={askCardData.questions}
               onSelect={(text) => {
-                handleSend(text);
+                const ctx = lastUserMessageRef.current;
+                const prefix = ctx
+                  ? `关于"${ctx.slice(0, 100)}"，我的选择如下：\n\n`
+                  : "";
+                handleSend(prefix + text);
               }}
               onDismiss={() => setAskDismissed(true)}
             />
@@ -328,6 +353,15 @@ export function ChatView({ conversationId }: ChatViewProps) {
           isStreaming={isStreaming}
           disabled={!hasHydrated}
         />
+
+        {/* Debug panel — only rendered when NEXT_PUBLIC_DEBUG=true */}
+        {process.env.NEXT_PUBLIC_DEBUG === "true" && (
+          <DebugPanel
+            rawContent={rawContent}
+            isStreaming={isStreaming}
+            isSlowResponse={isSlowResponse}
+          />
+        )}
       </div>
     </div>
   );

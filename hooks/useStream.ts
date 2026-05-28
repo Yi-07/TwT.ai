@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { Message } from "@/types/conversation";
 import type { ModelOptions } from "@/types/provider";
+import { logger } from "@/lib/utils/logger";
 
 interface UseStreamOptions {
   providerId: string;
@@ -59,6 +60,8 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
 
   const send = useCallback(
     (messages: Message[]) => {
+      logger.debug("useStream send", { msgCount: messages.length });
+
       setRawContent("");
       pendingRef.current = "";
       if (rafRef.current) {
@@ -120,9 +123,11 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
                 const parsed = JSON.parse(data);
                 const delta = parsed.choices?.[0]?.delta?.content;
                 if (delta) {
+                  logger.debug("useStream delta", delta.slice(0, 50));
                   if (firstChunk) {
                     firstChunk = false;
                     clearSlowTimer();
+                    logger.info("useStream first chunk received");
                   }
                   pendingRef.current += delta;
                   if (!rafRef.current) {
@@ -140,10 +145,14 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
         })
         .catch((err) => {
           if (err.name !== "AbortError") {
+            logger.error("useStream stream failed", err.message);
             setError(err.message || "Stream failed");
+          } else {
+            logger.info("useStream aborted");
           }
         })
         .finally(() => {
+          logger.info("useStream ended");
           clearSlowTimer();
           flushPending();
           if (rafRef.current) {

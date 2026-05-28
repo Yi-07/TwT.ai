@@ -1,4 +1,5 @@
 import type { ArtifactType, Segment } from "@/types/artifact";
+import { logger } from "@/lib/utils/logger";
 
 type State = "text" | "tag_open" | "body";
 
@@ -44,6 +45,7 @@ export class ArtifactParser {
         this.state = "tag_open";
         this.tagBuf = "<artifact";
         i = tagStart + "<artifact".length;
+        logger.debug("parser → tag_open");
       } else if (this.state === "tag_open") {
         const tagEnd = delta.indexOf(">", i);
         if (tagEnd === -1) {
@@ -79,6 +81,7 @@ export class ArtifactParser {
           this.state = "body";
           this.bodyBuf = "";
           this.placeholderIndex = this.segments.length;
+          logger.debug("parser → body", { type: this.tagType, title: this.tagTitle });
         } else if (this.tagBuf.startsWith("<artifact")) {
           // Malformed artifact tag — DeepSeek often writes type="中文"
           // instead of type="react". Fallback: sniff from body content.
@@ -88,6 +91,7 @@ export class ArtifactParser {
           this.tagType = "";
           this.state = "body";
           this.bodyBuf = "";
+          logger.debug("parser → body (fallback)", { type: this.tagType || "(sniff)", title: this.tagTitle });
         } else {
           this.textBuf += this.tagBuf;
           this.state = "text";
@@ -150,6 +154,7 @@ export class ArtifactParser {
 
         i = closeTag + "</artifact>".length;
         this.state = "text";
+        logger.debug("parser → text", { artifactType: this.tagType, contentLen: artifactSeg.content.length });
       }
     }
 
@@ -159,6 +164,7 @@ export class ArtifactParser {
   /** Call when the stream ends — flush any buffered content as text. */
   flush(hard = true): Segment[] {
     if (hard) {
+      logger.info("parser flush(hard=true)", { state: this.state, bodyLen: this.bodyBuf.length });
       if (this.state === "tag_open") {
         this.textBuf += this.tagBuf;
         this.state = "text";

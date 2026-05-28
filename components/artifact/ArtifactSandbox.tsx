@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState } from "react";
 import type { ArtifactType } from "@/types/artifact";
+import { logger } from "@/lib/utils/logger";
 
 interface ArtifactSandboxProps {
   artifactType: ArtifactType;
@@ -54,6 +55,9 @@ const CDN_WHITELIST = [
 function buildSrcdoc(type: ArtifactType, code: string): string {
   switch (type) {
     case "html":
+      if (!/<body/i.test(code)) {
+        code = `<body style="overflow:hidden;margin:0">${code}</body>`;
+      }
       if (/<body[^>]*style=/.test(code)) {
         code = code.replace(
           /(<body[^>]*style=")([^"]*)(")/i,
@@ -67,7 +71,7 @@ function buildSrcdoc(type: ArtifactType, code: string): string {
       }
       return code.replace(
         /<\/body>/i,
-        `${SENDPROMPT_SCRIPT}${RESIZE_SCRIPT}</body>`,
+        `<style>body{height:auto!important}</style>${SENDPROMPT_SCRIPT}${RESIZE_SCRIPT}</body>`,
       );
 
     case "svg":
@@ -173,12 +177,23 @@ export function ArtifactSandbox({
         onSendPrompt?.(e.data.text);
       }
       if (e.data?.type === "sandbox-error" && e.data.error) {
-        console.error(
+        logger.error(
           "[Sandbox Error]",
           e.data.error.message,
           e.data.error.stack || "",
           e.data.error.lineno ? `(line ${e.data.error.lineno})` : "",
         );
+      }
+      if (
+        e.data?.type === "sandbox-error" ||
+        e.data?.type === "sendPrompt" ||
+        e.data?.type === "resize"
+      ) {
+        logger.debug("sandbox event", {
+          type: e.data.type,
+          height: e.data.height,
+          text: typeof e.data.text === "string" ? e.data.text.slice(0, 80) : undefined,
+        });
       }
     },
     [onSendPrompt],
