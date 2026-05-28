@@ -49,49 +49,53 @@ export async function POST(request: NextRequest) {
     systemPrompt: mergedSystemPrompt,
   });
 
-  // File logging — records raw SSE response to modelresponse file
-  const now = new Date();
+  // Debug-mode file logging — gated behind NEXT_PUBLIC_DEBUG
+  const debug = process.env.NEXT_PUBLIC_DEBUG === "true";
+  const now = debug ? new Date() : new Date(0);
   const model = providerId;
-  const tz8 = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-  const timestamp = tz8.toISOString().replace("Z", "+08:00");
+  const tz8 = debug ? new Date(now.getTime() + 8 * 60 * 60 * 1000) : new Date(0);
+  const timestamp = debug ? tz8.toISOString().replace("Z", "+08:00") : "";
   const divider = "─".repeat(72);
 
-  const header = [
-    "",
-    divider,
-    `  Model   │ ${model}`,
-    `  Time    │ ${timestamp}`,
-    `  Prompt  │ unified artifact`,
-    `  Tokens  │ ~${maxTokens ?? "default"}`,
-    divider,
-    "",
-  ].join("\n");
+  const header = debug
+    ? [
+        "",
+        divider,
+        `  Model   │ ${model}`,
+        `  Time    │ ${timestamp}`,
+        `  Prompt  │ unified artifact`,
+        `  Tokens  │ ~${maxTokens ?? "default"}`,
+        divider,
+        "",
+      ].join("\n")
+    : "";
 
-  // Pass-through stream: relays chunks from provider to client, also logs to file.
   const reader = rawStream.getReader();
-  const decoder = new TextDecoder();
+  const decoder = debug ? new TextDecoder() : null;
   let logContent = "";
 
   const passThrough = new ReadableStream({
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {
-        const filePath = join(process.cwd(), "modelresponse");
-        const entry = header + logContent + "\n";
-        readFile(filePath, "utf-8")
-          .then((old) => {
-            const lines = old.split(divider + "\n");
-            const keep = lines.slice(-50);
-            return writeFile(filePath, keep.join(divider + "\n") + entry, "utf-8");
-          })
-          .catch(() => appendFile(filePath, entry, "utf-8"));
+        if (debug) {
+          const filePath = join(process.cwd(), "modelresponse.log");
+          const entry = header + logContent + "\n";
+          readFile(filePath, "utf-8")
+            .then((old) => {
+              const lines = old.split(divider + "\n");
+              const keep = lines.slice(-50);
+              return writeFile(filePath, keep.join(divider + "\n") + entry, "utf-8");
+            })
+            .catch(() => appendFile(filePath, entry, "utf-8"));
+        }
 
         console.log("│  done    %dms", Date.now() - startedAt);
         console.log("└────────────────────────────────────");
         controller.close();
         return;
       }
-      logContent += decoder.decode(value, { stream: true });
+      if (debug && decoder) logContent += decoder.decode(value, { stream: true });
       controller.enqueue(value);
     },
   });

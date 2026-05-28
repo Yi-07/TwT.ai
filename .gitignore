@@ -63,4 +63,4 @@ modification.md
 history.txt
 
 # log files
-modelresponse
+modelresponse*.log
