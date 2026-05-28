@@ -159,7 +159,7 @@ export function MessageBubble({
             {editing ? (
               <div className="flex flex-col gap-2">
                 <textarea
-                  className="w-full resize-none rounded-lg bg-canvas px-3 py-2 text-[15px] leading-relaxed text-ink outline-none"
+                  className="w-full resize-none rounded-lg bg-canvas px-3 py-2 text-[15px] leading-relaxed text-ink outline-none dark:bg-surface-dark-elevated dark:text-on-dark"
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
                   onKeyDown={(e) => {
