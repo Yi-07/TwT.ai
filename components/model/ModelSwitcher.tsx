@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useModelStore } from "@/lib/store/model";
 
 interface Props {
-  providers: { id: string; name: string }[];
+  providers: { id: string; name: string; model: string }[];
 }
 
 export function ModelSwitcher({ providers }: Props) {
@@ -31,7 +31,10 @@ export function ModelSwitcher({ providers }: Props) {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-body transition-colors hover:bg-canvas-soft dark:text-on-dark dark:hover:bg-surface-dark-elevated"
       >
-        {activeProvider?.name ?? "Select model"}
+        <span>{activeProvider?.name ?? "Select model"}</span>
+        {activeProvider?.model && (
+          <span className="text-xs text-muted-soft font-normal">{activeProvider.model}</span>
+        )}
         <svg
           width="12"
           height="12"
@@ -62,7 +65,8 @@ export function ModelSwitcher({ providers }: Props) {
                   : "text-muted dark:text-on-dark-soft"
               }`}
             >
-              {p.name}
+              <span>{p.name}</span>
+              <span className="text-xs text-muted-soft ml-1">{p.model}</span>
               {p.id === activeModelId && (
                 <svg
                   width="14"
