@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { getProvider } from "@/lib/providers";
 import { getDefaultModel } from "@/lib/providers/registry";
 import { SYSTEM_PROMPT_ARTIFACT } from "@/lib/defaults";
-import { logger } from "@/lib/utils/logger";
 import type { Message } from "@/types/conversation";
 
 export async function POST(request: NextRequest) {
@@ -36,12 +35,13 @@ export async function POST(request: NextRequest) {
     : basePrompt;
 
   const provider = getProvider(providerId);
+  const reqId = Math.random().toString(36).slice(2, 6);
+  const startedAt = Date.now();
 
-  logger.info("[chat] request", {
-    model: providerId,
-    msgCount: messages.length,
-    maxTokens,
-  });
+  console.log("┌─ chat  %s ──────────────────────────", reqId);
+  console.log("│  model   %s", providerId);
+  console.log("│  msgs    %d", messages.length);
+  console.log("│  tokens  %d", maxTokens ?? 0);
 
   const rawStream = await provider.stream(messages, {
     temperature,
@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
           })
           .catch(() => appendFile(filePath, entry, "utf-8"));
 
-        logger.info("[chat] stream ended", { model: providerId });
+        console.log("│  done    %dms", Date.now() - startedAt);
+        console.log("└────────────────────────────────────");
         controller.close();
         return;
       }
