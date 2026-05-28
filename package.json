@@ -1,6 +1,13 @@
 {
   "name": "twt-ai",
   "version": "0.1.0",
+  "description": "Multi-model AI chat frontend — Claude, DeepSeek, ModelScope with streaming, artifacts, and dual-theme UI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Yi-07/TwT.ai"
+  },
+  "keywords": ["ai", "chat", "claude", "deepseek", "llm", "nextjs", "typescript"],
   "private": true,
   "scripts": {
     "dev": "next dev",

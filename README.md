@@ -1,49 +1,112 @@
 # TwT.ai
 
-Multi-model AI chat frontend inspired by claude.ai. Switch between Claude, DeepSeek, and future providers with persistent conversation history, streaming responses, per-model settings, and an Artifact system that renders interactive HTML/React views inline.
+Multi-model AI chat frontend inspired by claude.ai. Switch between Claude, DeepSeek, ModelScope, and custom providers with persistent conversation history, streaming responses, per-model settings, and an Artifact system that renders interactive HTML/React/SVG views inline.
 
-## Getting Started
+## Features
+
+- **Multi-model** — Claude, DeepSeek, ModelScope, and custom OpenAI-compatible providers
+- **Streaming** — SSE-based real-time response rendering with RAF-throttled updates
+- **Artifact system** — Model-generated React / HTML / SVG rendered in sandboxed iframes
+- **Structured input** — `<ask_user>` tab-based question cards for guided information collection
+- **Dual theme** — Warm Canvas light + Midnight dark, persisted to localStorage
+- **Conversation history** — IndexedDB-persisted, sidebar navigation, auto-trim (50 convos, 200 msgs)
+- **Per-model settings** — Temperature, max tokens, system prompt per provider
+- **Copy / Edit / Retry** — Message-level controls on user bubbles
+- **Debug mode** — `NEXT_PUBLIC_DEBUG` gate with unified logger + real-time DebugPanel
+
+## Quick Start
 
 ```bash
-# Install dependencies
+# Clone
+git clone https://github.com/Yi-07/TwT.ai.git
+cd TwT.ai
+
+# Install
 pnpm install
 
-# Copy environment variables
-cp .env.example .env
-# Add your API keys to .env
+# Configure
+cp .env.example .env.local
+# Edit .env.local with your API keys
 
-# Start dev server
+# Run
 pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Commands
+## Configuration
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start dev server |
-| `pnpm build` | Production build |
-| `pnpm tsc --noEmit` | Type check |
-| `pnpm lint` | ESLint check |
+### Built-in providers
 
-## Environment Variables
+| Provider | Env vars |
+|----------|----------|
+| Claude | `ANTHROPIC_API_KEY`, `CLAUDE_MODEL`, `CLAUDE_BASE_URL` |
+| DeepSeek | `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL` |
+| ModelScope | `DASHSCOPE_API_KEY`, `MODELSCOPE_MODEL` |
 
-See `.env.example`:
+### Custom providers
 
-- `ANTHROPIC_API_KEY` — Claude (Anthropic)
-- `DEEPSEEK_API_KEY` — DeepSeek
+Add a `CUSTOM_PROVIDERS` env var with a JSON array of OpenAI-compatible endpoints:
+
+```bash
+CUSTOM_PROVIDERS=[{"id":"groq","name":"Groq","type":"openai-compatible","apiKey":"gsk_xxx","baseUrl":"https://api.groq.com/openai/v1","model":"llama3-70b-8192"}]
+```
+
+Restart `pnpm dev` — no code changes needed.
+
+### Model defaults
+
+```bash
+NEXT_PUBLIC_DEFAULT_PROVIDER=deepseek      # Active provider on first load
+NEXT_PUBLIC_DEFAULT_TEMPERATURE=1          # Shared between API and Settings panel
+NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192        # Shared between API and Settings panel
+```
+
+### Production lockdown
+
+```bash
+NEXT_PUBLIC_ALLOW_USER_SETTINGS=false      # Hides Settings panel from users
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS v4 |
+| State | Zustand v5 + IndexedDB persist |
+| Markdown | react-markdown + remark-gfm |
+| Package manager | pnpm |
 
 ## Architecture
 
-- **Providers**: `/lib/providers/` — Model adapters (only place that calls external APIs)
-- **API**: `/app/api/chat/route.ts` — Single SSE streaming endpoint
-- **State**: `/lib/store/` — Zustand stores (conversation, model settings)
-- **Artifacts**: Rendered in sandboxed iframes via `srcdoc`, supports React (Babel), HTML, and SVG
+```
+POST /api/chat → Provider Registry → Claude / DeepSeek / ModelScope
+                                   → ReadableStream (SSE)
+                                   → useStream hook (RAF-throttled)
+                                   → MessageBubble (Markdown + Artifacts)
+```
+
+- **`lib/providers/`** — Model adapters. `config.ts` centralises all provider definitions. `index.ts` (server-only) creates instances by type. `registry.ts` (client-safe) exports metadata.
+- **`lib/store/`** — Zustand stores: `conversation.ts` (IndexedDB), `model.ts` (localStorage).
+- **`components/`** — Chat UI, sidebar, model controls, theme toggle, debug panel, artifact sandbox.
+- **`lib/utils/`** — Artifact parser (state machine), `<ask_user>` parser, logger.
+
+See [CLAUDE.md](CLAUDE.md) for detailed architecture docs and contribution guidelines.
+
+## Commands
+
+| Command | Description |
+|---------|------------|
+| `pnpm dev` | Start dev server |
+| `pnpm build` | Production build |
+| `pnpm tsc --noEmit` | Type check |
+| `pnpm lint` | ESLint |
 
 ## Vendored Dependencies
 
-Artifact sandbox dependencies are vendored in `public/vendor/` (no CDN):
+Artifact sandbox dependencies are vendored in `public/vendor/` — no external CDN calls at runtime:
 
 | File | Source | Version |
 |------|--------|---------|
@@ -52,3 +115,8 @@ Artifact sandbox dependencies are vendored in `public/vendor/` (no CDN):
 | `babel.min.js` | cdnjs / Babel Standalone | 7.28.4 |
 | `recharts.umd.js` | unpkg / Recharts | 2.15.3 |
 | `lodash.umd.js` | unpkg / lodash | 4.17.21 |
+| `prop-types.umd.js` | cdnjs / prop-types | — |
+
+## License
+
+MIT
