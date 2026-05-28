@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     : basePrompt;
 
   const provider = getProvider(providerId);
-  const reqId = Math.random().toString(36).slice(2, 6);
+  const reqId = (body as { conversationId?: string }).conversationId?.slice(-8) ?? "-";
   const startedAt = Date.now();
 
   console.log("┌─ chat  %s ──────────────────────────", reqId);

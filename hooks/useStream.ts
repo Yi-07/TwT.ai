@@ -15,7 +15,7 @@ interface UseStreamReturn {
   isStreaming: boolean;
   isSlowResponse: boolean;
   error: string | null;
-  send: (messages: Message[]) => void;
+  send: (messages: Message[], conversationId?: string) => void;
   abort: () => void;
 }
 
@@ -59,8 +59,8 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
   }, [clearSlowTimer]);
 
   const send = useCallback(
-    (messages: Message[]) => {
-      logger.debug("useStream send", { msgCount: messages.length });
+    (messages: Message[], conversationId?: string) => {
+      logger.debug("useStream send", { msgCount: messages.length, cid: conversationId });
 
       setRawContent("");
       pendingRef.current = "";
@@ -88,6 +88,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
           messages,
           providerId: opts.providerId,
           ...opts.modelOptions,
+          conversationId,
         }),
         signal: controller.signal,
       })

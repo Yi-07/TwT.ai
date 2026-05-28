@@ -132,7 +132,7 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
         (m) => m.content.trim() !== "",
       );
 
-      send(messages);
+      send(messages, cId);
     },
     [createAssistantMessage, send],
   );
