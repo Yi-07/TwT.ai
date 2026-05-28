@@ -36,7 +36,18 @@ export function getProviderMetas(): ProviderMeta[] {
   return [...BUILTIN_METAS, ...custom.map((c) => ({ id: c.id, name: c.name }))];
 }
 
-/** Server-only — full config with API keys. */
+/** Server-side — filters to providers with a configured API key. */
+export interface AvailableProvider {
+  id: string;
+  name: string;
+  model: string;
+}
+
+export function getAvailableProviders(): AvailableProvider[] {
+  return getProviderConfigs()
+    .filter((c) => c.apiKey !== "")
+    .map((c) => ({ id: c.id, name: c.name, model: c.model }));
+}
 export function getProviderConfigs(): ProviderConfig[] {
   const builtIn: ProviderConfig[] = [
     {
