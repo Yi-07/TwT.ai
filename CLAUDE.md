@@ -78,11 +78,11 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 ├── lib/
 │   ├── providers/
 │   │   ├── base.ts                 # Abstract base implementing ModelProvider
-│   │   ├── index.ts                # Provider registry + factory — SERVER ONLY (imports SDKs)
-│   │   ├── registry.ts             # Provider metadata (id, name) — CLIENT SAFE, no SDK imports
-│   │   ├── claude.ts               # Anthropic SDK adapter
-│   │   ├── deepseek.ts             # DeepSeek adapter (OpenAI-compatible)
-│   │   └── modelscope.ts           # ModelScope adapter (OpenAI-compatible)
+│   │   ├── config.ts               # Centralised provider config + client-safe metas
+│   │   ├── index.ts                # Config-driven factory — SERVER ONLY (imports SDKs)
+│   │   ├── registry.ts             # Client-safe exports (ProviderMeta, getProviderMetas)
+│   │   ├── claude.ts               # Anthropic SDK adapter (receives ProviderConfig)
+│   │   └── generic.ts              # Generic OpenAI-compatible adapter (receives ProviderConfig)
 │   ├── defaults.ts                 # Default system prompt (artifact + sendPrompt instructions)
 │   ├── store/
 │   │   ├── conversation.ts         # Zustand: message list, conversation history (IndexedDB persisted)
@@ -150,17 +150,25 @@ Additional constraints:
 All model API calls **must** go through `/lib/providers/`. Never call model APIs directly
 from components or other lib files.
 
-The provider layer is split into two files to prevent server-only SDK code from
-leaking into the client bundle:
+The provider layer is split to prevent server-only SDK code from leaking into the client bundle:
 
-- **`index.ts`** (SERVER ONLY): Imports provider SDKs, provides `getProvider()` for
-  server-side instantiation. Only `app/api/chat/route.ts` imports this file.
-- **`registry.ts`** (CLIENT SAFE): Pure data — exports `ProviderMeta` type and
-  `getProviderMetas()`. Contains zero SDK imports. Client components import this file.
+- **`index.ts`** (SERVER ONLY): Config-driven factory — reads full `ProviderConfig` (with API keys),
+  creates ClaudeProvider or OpenAICompatibleProvider by `config.type`. Only `app/api/chat/route.ts`
+  imports this file.
+- **`registry.ts`** (CLIENT SAFE): Re-exports `getProviderMetas()` and `ProviderMeta` type from config.
+  Contains zero SDK imports. Client components import this file.
 
-If a client component imports `index.ts`, the entire SDK tree gets bundled into the
-browser, causing `UnhandledSchemeError: node:child_process`. Always use `registry.ts`
-for client-side provider lookups.
+Provider configs are centralised in `config.ts`:
+- `getProviderConfigs()` — full config with API keys (SERVER ONLY)
+- `getProviderMetas()` — id + name only, reads `NEXT_PUBLIC_CUSTOM_PROVIDERS` (CLIENT SAFE)
+
+### Adding a new provider
+
+1. For built-in: add an entry to the `builtIn` array in `config.ts`
+2. For custom (user-defined): set `CUSTOM_PROVIDERS` env var (full config) and
+   `NEXT_PUBLIC_CUSTOM_PROVIDERS` (id + name for UI display)
+3. Add its env var to `.env.example`
+4. Do **not** touch UI components or the API route
 
 ### ModelProvider interface (`/types/provider.ts`)
 
@@ -178,14 +186,6 @@ export interface ModelOptions {
   systemPrompt?: string
 }
 ```
-
-### Adding a new provider
-
-1. Create `/lib/providers/<name>.ts` implementing `ModelProvider`
-2. Register it in `/lib/providers/index.ts` (constructor map)
-3. Add its metadata to `/lib/providers/registry.ts` (id + name — pure data)
-4. Add its env var to `.env.example`
-5. Do **not** touch UI components or the API route
 
 ---
 
