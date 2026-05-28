@@ -693,6 +693,120 @@ Zustand's `Object.is` comparison always detected a change → infinite loop.
 Fixed by returning `Message | null` (stable reference) from selector.
 
 ---
+## Phase 23 — Provider Architecture Refactoring
+
+### Config-driven provider factory (4ca9149, 65b8752)
+
+Provider configuration centralised into `lib/providers/config.ts`:
+- `ProviderConfig` interface: `{ id, name, type, apiKey, baseUrl, model }`
+- Built-in providers defined as data, not hardcoded in class files
+- `getProviderMetas()` — client-safe (id + name only)
+- `getProviderConfigs()` — server-only (full config with API keys)
+- `getAvailableProviders()` — server-side filtering by non-empty API key
+
+Created `lib/providers/generic.ts` — `OpenAICompatibleProvider`:
+- Constructor receives `ProviderConfig`
+- Replaces per-provider boilerplate classes
+
+Deleted `lib/providers/deepseek.ts` and `lib/providers/modelscope.ts` —
+both were empty subclasses with only field assignments, now handled by
+`OpenAICompatibleProvider`.
+
+`ClaudeProvider` refactored to receive `ProviderConfig` instead of reading
+env vars directly (`apiKey`, `baseUrl`, `defaultModel` all from config).
+
+`index.ts` factory now driven by `config.type`:
+- `"anthropic"` → `ClaudeProvider`
+- `"openai-compatible"` → `OpenAICompatibleProvider`
+
+Custom providers via `CUSTOM_PROVIDERS` env var (JSON array) — restart
+`pnpm dev` and the new provider appears in the frontend. No code changes.
+
+### Server Component props for model selection (2a7b833, 751ce76)
+
+`app/c/[id]/page.tsx` (Server Component) calls `getAvailableProviders()` and
+passes the list as props through `ChatView` → `ModelSwitcher`. This means
+the frontend only shows providers with actual API keys configured — no more
+showing "Claude" when `ANTHROPIC_API_KEY` is empty.
+
+`NEXT_PUBLIC_CUSTOM_PROVIDERS` removed — provider names no longer exposed
+in client bundle. `getProviderMetas()` marked deprecated.
+
+### `fix: remove provider cache` (146411b)
+
+`providerCache` Map kept the first Provider instance forever, so env changes
+at dev-server restart were silently ignored. Provider constructors are
+stateless — caching buys nothing. Removed.
+
+### Model name display in switcher (3491cc0)
+
+`ModelSwitcher` now shows actual configured model name alongside provider name:
+"DeepSeek · deepseek-v4-flash" instead of just "DeepSeek".
+
+### `fix: share DEFAULT_* via NEXT_PUBLIC_ prefix` (a7050d1)
+
+Renamed `DEFAULT_TEMPERATURE` → `NEXT_PUBLIC_DEFAULT_TEMPERATURE` and
+`DEFAULT_MAX_TOKENS` → `NEXT_PUBLIC_DEFAULT_MAX_TOKENS`. Both `route.ts`
+(server) and `ModelSettings` (client) read the same env vars — no more
+4096 vs 8192 mismatch between API calls and the Settings panel.
+
+---
+## Phase 24 — Server Diagnostics
+
+### Box-framed request logs (f9b5927, 0dc5ad0)
+
+Replaced flat `logger.info` calls in `route.ts` with `console.log`
+box-drawing format:
+```
+┌─ chat  wuhp61gt ─────────────────────
+│  model   deepseek
+│  msgs    3
+│  tokens  8192
+│  done    2898ms
+└────────────────────────────────────
+```
+
+`conversationId` now passed through `useStream.send()` → POST body →
+route.ts extracts last 8 chars as request ID. Each log frame maps directly
+to a browser URL.
+
+### Sandbox error capture (8fb2a0b)
+
+Replaced Babel's auto-processing of `<script type="text/babel">` with
+manual `Babel.transform()` + `eval()` wrapped in try/catch. Browser no
+longer sanitises error details (cross-origin "Script error." → full
+stack trace with line numbers).
+
+### `feat: re-enable modelresponse file logging` (e0c81af)
+
+Uncommented raw SSE recording to `modelresponse` file for debugging
+proxy/relay text corruption issues.
+
+---
+## Phase 25 — UI Polish
+
+### `fix: dark mode text invisible in edit textarea` (3eb6982)
+
+Inline-edit textarea in user bubble used `text-ink` without dark mode
+counterpart — text was #3D3D3A on dark background. Added
+`dark:bg-surface-dark-elevated dark:text-on-dark`.
+
+### `fix: ModelSwitcher dropdown auto-width` (53288fa)
+
+Changed `w-48` (fixed 192px) to `min-w-44` (minimum 176px, auto-expands)
+with `whitespace-nowrap` — prevents model names like "deepseek-v4-flash"
+from overflowing the dropdown.
+
+### Scrollbar, focus border, and colour fixes (045af83, various)
+
+- StreamingIndicator dots: `bg-muted` → `bg-body` for light mode visibility
+- InputBar/ModelSettings: `transition-[border-color] duration-200` to
+  prevent 1200ms global CSS transition lag on focus
+- Code blocks: `prose-zinc` dark text on light background fixed with
+  `[&_pre]:text-ink dark:[&_pre]:text-on-dark-soft`
+- Placeholder preview area: `bg-surface-dark` → `bg-code-block` (theme-aware)
+
+---
 ## Architecture Decisions
 
 1. **Provider registry split** — `index.ts` (server, imports SDKs) vs `registry.ts`
