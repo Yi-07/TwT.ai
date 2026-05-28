@@ -8,14 +8,14 @@ export class ClaudeProvider extends BaseProvider {
   name = "Claude";
   protected defaultModel = process.env.CLAUDE_MODEL || "claude-sonnet-4-6";
   protected apiKey: string;
-  protected baseUrl = "https://api.anthropic.com";
+  protected baseUrl = process.env.CLAUDE_BASE_URL || "https://api.anthropic.com";
 
   private client: Anthropic;
 
   constructor(apiKey?: string) {
     super();
     this.apiKey = apiKey ?? process.env.ANTHROPIC_API_KEY ?? "";
-    this.client = new Anthropic({ apiKey: this.apiKey });
+    this.client = new Anthropic({ apiKey: this.apiKey, baseURL: this.baseUrl });
   }
 
   async stream(
