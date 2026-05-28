@@ -9,8 +9,6 @@ import {
 
 export { type ProviderConfig, getProviderMetas };
 
-const providerCache = new Map<string, ModelProvider>();
-
 function createProvider(config: ProviderConfig): ModelProvider {
   switch (config.type) {
     case "anthropic":
@@ -21,9 +19,6 @@ function createProvider(config: ProviderConfig): ModelProvider {
 }
 
 export function getProvider(id: string): ModelProvider {
-  const cached = providerCache.get(id);
-  if (cached) return cached;
-
   const config = getProviderConfigs().find((c) => c.id === id);
   if (!config) {
     const available = getProviderConfigs()
@@ -34,7 +29,5 @@ export function getProvider(id: string): ModelProvider {
     );
   }
 
-  const instance = createProvider(config);
-  providerCache.set(id, instance);
-  return instance;
+  return createProvider(config);
 }
