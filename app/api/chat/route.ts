@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { appendFile } from "node:fs/promises";
+import { appendFile, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { getProvider } from "@/lib/providers";
 import { getDefaultModel } from "@/lib/providers/registry";
@@ -42,10 +42,7 @@ export async function POST(request: NextRequest) {
     systemPrompt: mergedSystemPrompt,
   });
 
-  // Tee the stream: one copy to the client, one for server-side logging
-  const [clientStream, logStream] = rawStream.tee();
-
-  // Accumulate and append to file in background — never blocks the response
+  // Log header
   const now = new Date();
   const model = providerId;
   const tz8 = new Date(now.getTime() + 8 * 60 * 60 * 1000);
@@ -63,23 +60,34 @@ export async function POST(request: NextRequest) {
     "",
   ].join("\n");
 
+  // Pass-through stream: send chunks to client AND accumulate for logging.
+  // Avoids ReadableStream.tee() which buffers both branches in memory.
+  const reader = rawStream.getReader();
   const decoder = new TextDecoder();
   let logContent = "";
-  const reader = logStream.getReader();
-  function pump(): Promise<void> {
-    return reader.read().then(({ done, value }) => {
+
+  const passThrough = new ReadableStream({
+    async pull(controller) {
+      const { done, value } = await reader.read();
       if (done) {
         const filePath = join(process.cwd(), "modelresponse");
         const entry = header + logContent + "\n";
-        return appendFile(filePath, entry, "utf-8").catch(() => {});
+        readFile(filePath, "utf-8")
+          .then((old) => {
+            const lines = old.split(divider + "\n");
+            const keep = lines.slice(-50);
+            return writeFile(filePath, keep.join(divider + "\n") + entry, "utf-8");
+          })
+          .catch(() => appendFile(filePath, entry, "utf-8"));
+        controller.close();
+        return;
       }
       logContent += decoder.decode(value, { stream: true });
-      return pump();
-    });
-  }
-  pump();
+      controller.enqueue(value);
+    },
+  });
 
-  return new Response(clientStream, {
+  return new Response(passThrough, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
