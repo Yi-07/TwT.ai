@@ -17,12 +17,9 @@ export function DebugPanel({
   const [collapsed, setCollapsed] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const lastMsgInfo = useConversationStore((s) => {
+  const lastMsg = useConversationStore((s) => {
     const conv = s.conversations.find((c) => c.id === s.activeId);
-    const last = conv?.messages.at(-1);
-    return last
-      ? { role: last.role, contentLen: last.content.length }
-      : null;
+    return conv?.messages.at(-1) ?? null;
   });
 
   const handleCopy = () => {
@@ -85,8 +82,8 @@ export function DebugPanel({
 
         {/* Message info */}
         <div className="flex gap-4 text-muted">
-          <span>role: {lastMsgInfo?.role ?? "none"}</span>
-          <span>content: {lastMsgInfo?.contentLen ?? 0} chars</span>
+          <span>role: {lastMsg?.role ?? "none"}</span>
+          <span>content: {lastMsg?.content.length ?? 0} chars</span>
           <span>streaming: {String(isStreaming)}</span>
         </div>
       </div>
