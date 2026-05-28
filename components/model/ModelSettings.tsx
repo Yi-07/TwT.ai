@@ -10,8 +10,8 @@ export function ModelSettings() {
   const updateModelSettings = useModelStore((s) => s.updateModelSettings);
 
   const settings = modelSettings[activeModelId] ?? {};
-  const temperature = settings.temperature ?? 1;
-  const maxTokens = settings.maxTokens ?? 4096;
+  const temperature = settings.temperature ?? (Number(process.env.NEXT_PUBLIC_DEFAULT_TEMPERATURE) || 1);
+  const maxTokens = settings.maxTokens ?? (Number(process.env.NEXT_PUBLIC_DEFAULT_MAX_TOKENS) || 8192);
   const systemPrompt = settings.systemPrompt ?? "";
 
   const update = useCallback(
