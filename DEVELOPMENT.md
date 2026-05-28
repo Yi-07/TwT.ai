@@ -555,6 +555,144 @@ renders — which happens on dark-mode page refresh — the effect never fired a
 (a small outlined circle). Added `mounted` to deps: `[isDark, mounted]`.
 
 ---
+## Phase 19 — AskCard + Message Actions
+
+### `feat: add AskCard component — structured question tabs` (712a2a9)
+
+`components/chat/AskCard.tsx` — Fixed position card above InputBar:
+- Parses `<ask_user>` JSON blocks from model response
+- Dynamic question count rendering with option stagger animation
+- Keyboard navigation (↑↓ Enter), hover highlights
+- Custom text input row with Pencil icon + Skip button
+- Accumulates answers across questions, sends all on last question
+
+`lib/utils/parseAskCard.ts` — `parseAskCard(content)` extracts and validates
+JSON from `<ask_user>` blocks. Returns `AskCardData | null`.
+
+### AskCard integration + animations (60ae486, b9218c9)
+
+`ChatView.tsx`:
+- `showAskLoading` — three-dot indicator during streaming when `<ask_user>`
+  detected but not yet closed
+- `askCardData` derivation after streaming completes — parses model output
+- Context prefix on tab submit: `关于"...", 我的选择如下：`
+
+`MessageBubble.tsx` — strips `<ask_user>` blocks from rendered content:
+- Completed blocks: `<ask_user>...</ask_user>` (greedy)
+- In-progress blocks (streaming): `<ask_user>...` to end of string
+
+System prompt updated: `<ask_user>` now preferred over HTML artifact forms
+for structured information collection.
+
+### `feat: inline edit + copy/retry on user messages` (f679941)
+
+User messages gain three icon buttons visible on `group` hover:
+- **Copy** — copies message text to clipboard, check icon feedback
+- **Edit** — switches bubble to inline textarea, Enter to submit, Escape to cancel
+- **Retry** — removes last assistant message + re-sends with same user content
+
+`handleEditSubmit` updates user message content in store, removes old assistant,
+then re-sends. `handleRetry` uses `activeId` (not ref) to fix cold-start retry.
+`doSend` helper extracted to avoid duplicate user messages on retry/edit.
+
+`lib/store/conversation.ts` — added `removeLastAssistantMessage(conversationId)`.
+
+---
+## Phase 20 — Debug Mode
+
+### `chore: add logger utility with NEXT_PUBLIC_DEBUG gate` (7b694dc)
+
+`lib/utils/logger.ts` — Four-level unified logger:
+- `error` — always outputs
+- `warn/info/debug` — gated behind `NEXT_PUBLIC_DEBUG=true`
+- Zero dependencies, no project-internal imports — safe for any module
+
+### `feat: add DebugPanel component` (a139ffe)
+
+`components/debug/DebugPanel.tsx` — Collapsible real-time debug overlay:
+- Shows rawContent last 500 chars + isStreaming/isSlowResponse flags
+- Reads last message role/content length from Zustand store
+- Copy rawContent to clipboard button
+- Collapsed to single `[Debug] Open` tab when not needed
+- Only mounts when `NEXT_PUBLIC_DEBUG=true` — tree-shaken in production
+
+### `feat: integrate logger into streaming pipeline` (8a5f864)
+
+Strategic log points added:
+- `useStream.ts`: send start, first chunk, each delta (first 50 chars),
+  abort, stream error, finally cleanup
+- `parseArtifact.ts`: state transitions (tag_open → body → text), flush(hard)
+- `ArtifactSandbox.tsx`: `console.error` → `logger.error`; sandbox postMessage
+  events logged via `logger.debug`
+- `ChatView.tsx`: `<DebugPanel>` conditionally rendered above InputBar
+
+No event bus — sandbox events and SSE raw chunks use `logger.debug` to console
+to avoid module-level singleton mixing events across multiple iframes.
+
+### `feat: terminal-level route logging` (17162fb)
+
+`app/api/chat/route.ts` — replaced modelresponse file I/O with terminal logging:
+- `logger.info` at request start (model, msgCount, maxTokens)
+- `logger.info` at stream end (model)
+- File logging code preserved as comments for easy re-enable
+
+---
+## Phase 21 — System Prompt Refinements
+
+### `feat: require clickable SVG diagram nodes` (1b7e892)
+
+Split SVG type into two sub-categories in system prompt:
+- **NAVIGATIONAL** (architecture, flowcharts, org charts) — MUST have
+  `onclick+sendPrompt()` on every meaningful node with hover feedback
+- **DECORATIVE** (illustrations, timelines) — no click requirement
+
+### `refactor: compress system prompts by ~50%` (a27ba4a)
+
+`SYSTEM_PROMPT_TEXT`: 20→10 lines, merged role+markdown into one block.
+`SYSTEM_PROMPT_ARTIFACT`: 192→100 lines, ~2500→~1200 tokens:
+- Removed decorative `───` dividers (saved 12 lines)
+- Compressed `<ask_user>` JSON example from 6 lines to 1
+- Merged Markdown/Chart/Visual sections into one
+- Merged React Sandbox notes into decision tree
+- Kept Recharts explicit enumeration (no `...` shorthand — literal-model-safe)
+
+### Unified artifact prompt refinements (ed6da37)
+
+Restructured type decision tree:
+- Step 1: svg for static/visual (was: svg for non-interactive)
+- Step 2: react for component model → html as DEFAULT fallback
+- Added CDN library support for HTML artifacts (Chart.js, D3, Three.js)
+- Expanded CHART STYLING to cover all sandbox types
+
+---
+## Phase 22 — Provider & Bug Fixes
+
+### `fix: pass CLAUDE_BASE_URL to Anthropic client` (f9ce191)
+
+`lib/providers/claude.ts` — `baseUrl` field was declared but not passed to
+`new Anthropic()`. Now reads from `CLAUDE_BASE_URL` env var with fallback to
+`api.anthropic.com`. Enables proxy/relay API endpoints.
+
+### `fix: replace tee() with pass-through stream` (7e5cedd)
+
+`app/api/chat/route.ts` — `ReadableStream.tee()` buffers both branches in
+memory, causing OOM on large ModelScope responses. Replaced with single
+pass-through stream that accumulates chunks for logging without double-buffering.
+Also truncates modelresponse log to last 50 entries.
+
+### `fix: strip streaming ask_user and hide copy during streaming` (6771011)
+
+- Added second regex `.replace(/<ask_user>[\s\S]*$/, "")` for in-progress
+  streaming ask_user blocks without closing tag
+- Copy button hidden on assistant bubble while stream is active (`!streaming` guard)
+
+### `fix: Zustand infinite loop in DebugPanel` (current)
+
+DebugPanel selector returned a new `{ role, contentLen }` object every call —
+Zustand's `Object.is` comparison always detected a change → infinite loop.
+Fixed by returning `Message | null` (stable reference) from selector.
+
+---
 ## Architecture Decisions
 
 1. **Provider registry split** — `index.ts` (server, imports SDKs) vs `registry.ts`
