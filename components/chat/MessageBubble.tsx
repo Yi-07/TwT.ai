@@ -141,8 +141,10 @@ export function MessageBubble({
 
   // Per-message parser instance — eliminates module-level singleton
   // interference when multiple messages render simultaneously.
-  // Strip <ask_user> blocks so they don't render as raw JSON in the bubble.
-  const cleanContent = message.content.replace(/<ask_user>[\s\S]*?<\/ask_user>/g, "");
+  // Strip <ask_user> blocks — both completed and in-progress (streaming)
+  const cleanContent = message.content
+    .replace(/<ask_user>[\s\S]*?<\/ask_user>/g, "")
+    .replace(/<ask_user>[\s\S]*$/, "");
   const segments = useMemo(() => {
     const parser = new ArtifactParser();
     parser.parse(cleanContent);
@@ -218,7 +220,8 @@ export function MessageBubble({
               <SegmentRenderer key={seg.id} seg={seg} onSendPrompt={onSendPrompt} />
             ))}
           </div>
-          {/* Hover Copy for assistant messages */}
+          {/* Hover Copy for assistant messages — only after streaming completes */}
+          {!streaming && (
           <div className="mt-1.5 flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100">
             <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
               {copied ? (
@@ -228,6 +231,7 @@ export function MessageBubble({
               )}
             </button>
           </div>
+          )}
         </div>
       </div>
     </div>
