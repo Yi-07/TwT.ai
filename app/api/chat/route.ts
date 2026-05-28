@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
   const {
     messages,
     providerId = getDefaultModel(),
-    temperature,
-    maxTokens,
+    temperature = Number(process.env.DEFAULT_TEMPERATURE) || 1,
+    maxTokens = Number(process.env.DEFAULT_MAX_TOKENS) || 8192,
     systemPrompt,
   } = body as {
     messages: Message[];
