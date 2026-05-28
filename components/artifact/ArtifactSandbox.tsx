@@ -134,8 +134,47 @@ ${SENDPROMPT_SCRIPT}
 <body>
 <div id="root"></div>
 <pre id="err"></pre>
-<script type="text/babel">
+<script id="user-code" type="text/plain">
 ${prepared}
+<\/script>
+<script>
+(function() {
+  var codeEl = document.getElementById('user-code');
+  if (!codeEl) return;
+  var code = codeEl.textContent;
+  var compiled;
+  try {
+    compiled = Babel.transform(code, { presets: ['react'] }).code;
+  } catch(e) {
+    parent.postMessage({ type: 'sandbox-error', error: {
+      message: 'Babel compile: ' + (e.message || String(e)),
+      stack: e.stack || ''
+    }}, '*');
+    var el2 = document.getElementById('err');
+    if (el2) {
+      el2.style.display = 'block';
+      el2.textContent = 'Compile Error: ' + (e.message || String(e)) +
+        (e.stack ? '\\n\\n' + e.stack : '');
+    }
+    return;
+  }
+  try {
+    eval(compiled);
+  } catch(e) {
+    parent.postMessage({ type: 'sandbox-error', error: {
+      message: e.message || String(e),
+      stack: e.stack || '',
+      lineno: e.lineNumber,
+      colno: e.columnNumber
+    }}, '*');
+    var el3 = document.getElementById('err');
+    if (el3) {
+      el3.style.display = 'block';
+      el3.textContent = 'Runtime Error: ' + (e.message || String(e)) +
+        (e.stack ? '\\n\\n' + e.stack : '');
+    }
+  }
+})();
 <\/script>
 ${RESIZE_SCRIPT}
 </body>
