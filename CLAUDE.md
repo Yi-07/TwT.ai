@@ -521,7 +521,7 @@ NEXT_PUBLIC_DEBUG=false              # Enable debug panel + verbose console logg
 NEXT_PUBLIC_ALLOW_USER_SETTINGS=true # Set to "false" in production to hide settings panel
 DEFAULT_TEMPERATURE=1                # Default temperature (used when settings panel disabled)
 DEFAULT_MAX_TOKENS=8192              # Default max output tokens
-DEFAULT_USER_SYSTEM_PROMPT=          # Default custom system prompt
+
 NEXT_PUBLIC_APP_URL=                 # e.g. http://localhost:3000
 ```
 
