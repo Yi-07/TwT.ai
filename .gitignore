@@ -59,8 +59,7 @@ Desktop.ini
 
 # questions and development files
 development.txt
-modification.md
-history.txt
+DEVELOPMENT.md
 
 # log files
 modelresponse*.log
