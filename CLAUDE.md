@@ -21,6 +21,9 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 - Persistent storage: conversations in IndexedDB, model settings in localStorage
 - Slow-response warning, stop button, and retry after error/cancel
 - sandbox → chat communication via `window.sendPrompt()` API
+- Structured question collection via `<ask_user>` tabs (multi-question, keyboard nav)
+- Copy / edit / retry on user messages
+- Debug mode: `NEXT_PUBLIC_DEBUG` gate with unified logger + real-time DebugPanel
 - Responsive layout for both desktop and mobile
 
 ---
@@ -56,6 +59,7 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   │   ├── MessageList.tsx         # Iterates messages, renders MessageBubble per item
 │   │   ├── MessageBubble.tsx       # Splits segments: text → Markdown, artifact → ArtifactSandbox
 │   │   ├── InputBar.tsx            # Text input + send button
+│   │   ├── AskCard.tsx             # Structured question tabs (<ask_user> JSON parsing)
 │   │   └── StreamingIndicator.tsx  # Typing animation shown while SSE stream is open
 │   ├── sidebar/
 │   │   ├── ConversationList.tsx    # Full history list
@@ -64,10 +68,12 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   │   ├── ModelSwitcher.tsx       # Dropdown to switch active model
 │   │   └── ModelSettings.tsx       # temperature / maxTokens / systemPrompt panel
 │   ├── theme/
-│   │   └── ThemeToggle.tsx         # SVG mask morph icon + theme toggle with overlay
+│   │   └── ThemeToggle.tsx         # SVG mask morph icon + theme toggle
+│   ├── debug/
+│   │   └── DebugPanel.tsx          # Collapsible debug overlay (NEXT_PUBLIC_DEBUG gate)
 │   └── artifact/
 │       ├── ArtifactSandbox.tsx     # iframe sandbox; handles srcdoc injection + postMessage
-│       └── ArtifactToolbar.tsx     # Toolbar above sandbox: title, refresh, expand button
+│       └── ArtifactToolbar.tsx     # Toolbar above sandbox: title, refresh
 │
 ├── lib/
 │   ├── providers/
@@ -84,7 +90,9 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   │   └── storage.ts              # IndexedDB + localStorage storage adapters for Zustand persist
 │   └── utils/
 │       ├── stream.ts               # ReadableStream / SSE helper functions
-│       └── parseArtifact.ts        # State-machine parser for <artifact> tags → Segment[]
+│       ├── parseArtifact.ts        # State-machine parser for <artifact> tags → Segment[]
+│       ├── parseAskCard.ts         # JSON extraction from <ask_user> blocks
+│       └── logger.ts               # Unified logger with NEXT_PUBLIC_DEBUG gate
 │
 ├── hooks/
 │   ├── useStream.ts                # Consumes SSE stream, drives incremental rendering
@@ -262,18 +270,14 @@ mouse hover; fully transparent by default to minimize visual noise.
 
 ### System prompt instruction for artifact output
 
-Defined in `lib/defaults.ts` — two prompts:
-- `SYSTEM_PROMPT_TEXT` — reserved for future pure-text mode (forbids artifact tags)
+Defined in `lib/defaults.ts` — two compressed prompts (~1200 tokens total, down from ~2500):
+- `SYSTEM_PROMPT_TEXT` — minimal prompt forbidding artifact tags (10 lines)
 - `SYSTEM_PROMPT_ARTIFACT` — unified prompt with decision framework:
-  model decides whether to output text-only or text+artifact based on context,
-  not keyword matching. Includes type selection guide (svg/html/react, all
-  interactive-capable), chart styling rules (# prefix, 3:1 contrast, visible
-  grid lines), and form→sendPrompt collection pattern.
-
-`app/api/chat/route.ts` always uses `SYSTEM_PROMPT_ARTIFACT`.
-`classifyIntent()` keyword routing was removed — the model's own judgement
-via the decision framework has lower misclassification cost than 18-keyword
-heuristics.
+  model decides text vs artifact via context (not keyword matching).
+  Two-step type decision tree: svg (static/visual) → react (component model) → html (default).
+  Navigational SVG diagrams MUST have clickable nodes with sendPrompt().
+  Includes <ask_user> format, CDN library support, chart styling (# prefix, 3:1 contrast),
+  VISUAL DESIGN rules. `classifyIntent()` removed — model judgement > heuristics.
 
 ---
 
@@ -506,12 +510,14 @@ with `NEXT_PUBLIC_`.
 ```bash
 ANTHROPIC_API_KEY=      # Claude (Anthropic)
 CLAUDE_MODEL=           # Claude model version (e.g. claude-sonnet-4-6)
+CLAUDE_BASE_URL=        # Optional proxy/relay URL for Claude API
 DEEPSEEK_API_KEY=       # DeepSeek
 DEEPSEEK_MODEL=         # DeepSeek model version (e.g. deepseek-chat)
 DASHSCOPE_API_KEY=      # ModelScope (Alibaba Cloud DashScope)
 MODELSCOPE_MODEL=       # ModelScope model version (e.g. qwen-plus)
 # Future providers: add key here + register in /lib/providers/index.ts and /lib/providers/registry.ts
 NEXT_PUBLIC_DEFAULT_PROVIDER=  # Default AI provider when no conversation exists (claude | deepseek)
+NEXT_PUBLIC_DEBUG=false        # Enable debug panel + verbose console logging
 NEXT_PUBLIC_APP_URL=           # e.g. http://localhost:3000
 ```
 
