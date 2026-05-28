@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { getProviderMetas } from "@/lib/providers/registry";
 import { useModelStore } from "@/lib/store/model";
 
-export function ModelSwitcher() {
+interface Props {
+  providers: { id: string; name: string }[];
+}
+
+export function ModelSwitcher({ providers }: Props) {
   const activeModelId = useModelStore((s) => s.activeModelId);
   const setActiveModel = useModelStore((s) => s.setActiveModel);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  const providers = getProviderMetas();
   const activeProvider = providers.find((p) => p.id === activeModelId);
 
   const handleClickOutside = useCallback((e: MouseEvent) => {

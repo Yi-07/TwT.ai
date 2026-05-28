@@ -19,9 +19,10 @@ import { X, RefreshCw } from "lucide-react";
 
 interface ChatViewProps {
   conversationId: string;
+  availableProviders: { id: string; name: string; model: string }[];
 }
 
-export function ChatView({ conversationId }: ChatViewProps) {
+export function ChatView({ conversationId, availableProviders }: ChatViewProps) {
   const router = useRouter();
   const initialized = useRef(false);
 
@@ -296,7 +297,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
                 <path d="M9 3v18" />
               </svg>
             </button>
-            <ModelSwitcher />
+            <ModelSwitcher providers={availableProviders} />
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
