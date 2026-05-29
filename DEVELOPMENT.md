@@ -846,6 +846,40 @@ README updated with server-side persistence setup guide (Neon + SQL).
   just the transport layer differs
 
 ---
+## Phase 27 — Bug Fixes & Polish
+
+### `fix: add maxDuration=60 to API routes` (66f9f8a)
+
+Vercel Hobby plan has a 10s default function timeout. Streaming responses easily
+exceed this. Added `export const maxDuration = 60` to both `/api/chat` and
+`/api/conversations`.
+
+### `fix: lazy-init neon() to prevent build crash` (523f306)
+
+`neon(process.env.DATABASE_URL!)` was called at module top-level, which executes
+during `next build` — before `DATABASE_URL` is available. Moved to a lazy getter
+that only connects on the first API request.
+
+### `fix: escape tilde before Markdown rendering` (ba6befe)
+
+GFM treats `~` as a strikethrough delimiter, eating the character itself from
+text like "20~50" or "~3 hours". Added `seg.content.replace(/~/g, "\\~")` before
+`ReactMarkdown` so tildes render as literal text.
+
+### `feat: forbid hardcoded gray text colors in prompt` (f77b3b4)
+
+Artifact models frequently used `#666`, `#888`, `#999` as text colors — invisible
+on dark backgrounds. Added constraint to VISUAL DESIGN: no hardcoded gray text
+colors below `#D0` brightness.
+
+### Documentation (d0dca47, 39173af, 8f72f2b, fc9e38c)
+
+- Added demo GIF screenshot to README (EN + CN)
+- Added Deployment section (Vercel + Neon + production lockdown)
+- De-duplicated server-side persistence sections across Configuration and Deployment
+- Removed `DEVELOPMENT.md` from `.gitignore`
+
+---
 ## Architecture Decisions
 
 1. **Provider registry split** — `index.ts` (server, imports SDKs) vs `registry.ts`
