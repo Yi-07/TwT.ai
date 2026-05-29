@@ -880,6 +880,53 @@ colors below `#D0` brightness.
 - Removed `DEVELOPMENT.md` from `.gitignore`
 
 ---
+## Phase 28 — Hardening & Access Control
+
+### `feat: add password gate for private deployment` (6b0ea69)
+
+`components/auth/AuthGate.tsx` — Client component that gates the entire app
+behind a password form. On mount, calls `GET /api/auth` to check for an existing
+cookie. If 401, renders a centered login card (theme-aware, auto-adapts to
+light/dark). On submit, `POST /api/auth` validates the password and sets a 24h
+HttpOnly cookie.
+
+`app/api/auth/route.ts`:
+- `GET` — checks `twt-auth` cookie; always returns `ok` when `ACCESS_PASSWORD`
+  is unset (public mode)
+- `POST` — compares `body.password` to `ACCESS_PASSWORD`, sets cookie on match
+
+`app/layout.tsx` — Server Component checks `process.env.ACCESS_PASSWORD`:
+- Set → wraps children in `<AuthGate>`
+- Unset → renders children directly (zero overhead)
+
+`.env.example` — added `ACCESS_PASSWORD`.
+
+### `feat: constrain Markdown preamble to 3-5 sentences` (dc038c0)
+
+System prompt updated: "Write a 3-5 sentence Markdown summary BEFORE the
+artifact — frame what you built and why. The artifact is the primary
+deliverable." Prevents model from burning 80% of output tokens on description.
+
+### `chore: raise DEFAULT_MAX_TOKENS from 8192 → 131072 (128K)` (5c0d54e)
+
+Matches Claude Sonnet 4.6 / Opus 4.8 max output limit. DeepSeek V4 supports
+up to 384K but 128K is a safe universal default. Updated `.env.example`,
+`ModelSettings.tsx`, `route.ts`, and `CLAUDE.md`.
+
+### `fix: resolve all 3 ESLint warnings` (80348ea)
+
+- Removed unused `_expanded` prop from `ArtifactSandbox` (and `expanded`
+  from the interface + all call sites)
+- Removed unused `TRANSITION` constant from `AskCard`
+- Inlined `cleanContent` regex into `useMemo` to fix `exhaustive-deps`
+
+### `chore: switch default theme from dark to light` (01e9640)
+
+Anti-flash script in `app/layout.tsx` now defaults to `'light'` on first visit.
+All existing `dark:*` classes, `ThemeToggle`, and persisted preferences are
+unaffected.
+
+---
 ## Architecture Decisions
 
 1. **Provider registry split** — `index.ts` (server, imports SDKs) vs `registry.ts`

@@ -532,6 +532,7 @@ NEXT_PUBLIC_STORAGE_MODE=server      # Set to "server" for PostgreSQL multi-devi
 ACCESS_SECRET=                       # Server-side auth token for /api/conversations
 NEXT_PUBLIC_ACCESS_SECRET=           # Client-side auth token (embedded in bundle)
 DATABASE_URL=                        # Neon PostgreSQL connection string
+ACCESS_PASSWORD=                     # If set, password-gates the entire deployment
 
 NEXT_PUBLIC_APP_URL=                 # e.g. http://localhost:3000
 ```
