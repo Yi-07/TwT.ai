@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Conversation, Message } from "@/types/conversation";
 import { createConversationStorage } from "./storage";
+import { createServerStorage } from "./server-storage";
 
 const MAX_CONVERSATIONS = 50;
 const MAX_MESSAGES = 200;
@@ -145,7 +146,11 @@ export const useConversationStore = create<ConversationState>()(
     }),
     {
       name: "twt-conversations",
-      storage: createJSONStorage(() => createConversationStorage()),
+      storage: createJSONStorage(() =>
+        process.env.NEXT_PUBLIC_STORAGE_MODE === "server"
+          ? createServerStorage()
+          : createConversationStorage(),
+      ),
       partialize: (state) => ({
         conversations: state.conversations,
         activeId: state.activeId,

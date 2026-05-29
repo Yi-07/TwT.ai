@@ -64,6 +64,34 @@ NEXT_PUBLIC_DEFAULT_TEMPERATURE=1          # Shared between API and Settings pan
 NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192        # Shared between API and Settings panel
 ```
 
+### Server-side persistence (optional)
+
+By default, conversations are stored in the browser's IndexedDB. To persist data
+server-side (multi-device sync, Vercel deployment):
+
+1. Create a PostgreSQL database on [Neon](https://neon.tech) and run this SQL:
+
+```sql
+CREATE TABLE IF NOT EXISTS state (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+2. Set these env vars:
+
+```bash
+NEXT_PUBLIC_STORAGE_MODE=server
+ACCESS_SECRET=<random-string>              # Protects your API endpoints
+NEXT_PUBLIC_ACCESS_SECRET=<same-string>   # Client-side auth header
+DATABASE_URL=postgres://...               # Neon connection string
+```
+
+> **Note:** `NEXT_PUBLIC_ACCESS_SECRET` is embedded in the client bundle and visible
+> in browser DevTools. For personal use this is acceptable — redeploy to rotate it
+> if needed. A cookie-based auth flow is planned for a future version.
+
 ### Production lockdown
 
 ```bash
