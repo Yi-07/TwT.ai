@@ -47,8 +47,10 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   ├── page.tsx                    # Entry: redirect → /c/new
 │   ├── globals.css                 # Tailwind base + CSS variables
 │   └── api/
-│       └── chat/
-│           └── route.ts            # Only API entry point; calls provider, returns SSE
+│       ├── chat/
+│       │   └── route.ts            # Chat streaming endpoint
+│       └── conversations/
+│           └── route.ts            # Conversation CRUD (server storage mode)
 │   └── c/
 │       └── [id]/
 │           └── page.tsx            # Conversation page (Server Component shell)
@@ -84,10 +86,13 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   │   ├── claude.ts               # Anthropic SDK adapter (receives ProviderConfig)
 │   │   └── generic.ts              # Generic OpenAI-compatible adapter (receives ProviderConfig)
 │   ├── defaults.ts                 # Default system prompt (artifact + sendPrompt instructions)
+│   ├── db/
+│   │   └── index.ts                # PostgreSQL adapter (Neon serverless)
 │   ├── store/
-│   │   ├── conversation.ts         # Zustand: message list, conversation history (IndexedDB persisted)
-│   │   ├── model.ts                # Zustand: active model ID, per-model settings (localStorage persisted)
-│   │   └── storage.ts              # IndexedDB + localStorage storage adapters for Zustand persist
+│   │   ├── conversation.ts         # Zustand: message list, conversation history (dual storage)
+│   │   ├── model.ts                # Zustand: active model ID, per-model settings (localStorage)
+│   │   ├── storage.ts              # IndexedDB storage adapter for Zustand persist
+│   │   └── server-storage.ts       # Server-side storage adapter (PostgreSQL via API)
 │   └── utils/
 │       ├── stream.ts               # ReadableStream / SSE helper functions
 │       ├── parseArtifact.ts        # State-machine parser for <artifact> tags → Segment[]
@@ -521,6 +526,12 @@ NEXT_PUBLIC_DEBUG=false              # Enable debug panel + verbose console logg
 NEXT_PUBLIC_ALLOW_USER_SETTINGS=true # Set to "false" in production to hide settings panel
 NEXT_PUBLIC_DEFAULT_TEMPERATURE=1    # Default temperature (route.ts + Settings panel)
 NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192  # Default max output tokens (route.ts + Settings panel)
+
+# Server-side persistence (optional — unset defaults to browser IndexedDB)
+NEXT_PUBLIC_STORAGE_MODE=server      # Set to "server" for PostgreSQL multi-device sync
+ACCESS_SECRET=                       # Server-side auth token for /api/conversations
+NEXT_PUBLIC_ACCESS_SECRET=           # Client-side auth token (embedded in bundle)
+DATABASE_URL=                        # Neon PostgreSQL connection string
 
 NEXT_PUBLIC_APP_URL=                 # e.g. http://localhost:3000
 ```
