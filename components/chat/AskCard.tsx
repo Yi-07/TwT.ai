@@ -14,9 +14,6 @@ interface AskCardProps {
   onDismiss: () => void;
 }
 
-const TRANSITION =
-  "translateY(10px) → 0 / 0.22s cubic-bezier(0.22,0.68,0,1.2)";
-
 export function AskCard({ questions, onSelect, onDismiss }: AskCardProps) {
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);

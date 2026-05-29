@@ -85,7 +85,6 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
         artifactType={seg.artifactType}
         title={seg.title}
         content={seg.content}
-        expanded={true}
         onSendPrompt={onSendPrompt}
       />
     </div>
@@ -142,12 +141,12 @@ export function MessageBubble({
   // Per-message parser instance — eliminates module-level singleton
   // interference when multiple messages render simultaneously.
   // Strip <ask_user> blocks — both completed and in-progress (streaming)
-  const cleanContent = message.content
-    .replace(/<ask_user>[\s\S]*?<\/ask_user>/g, "")
-    .replace(/<ask_user>[\s\S]*$/, "");
   const segments = useMemo(() => {
+    const content = message.content
+      .replace(/<ask_user>[\s\S]*?<\/ask_user>/g, "")
+      .replace(/<ask_user>[\s\S]*$/, "");
     const parser = new ArtifactParser();
-    parser.parse(cleanContent);
+    parser.parse(content);
     return parser.flush(!streaming);
   }, [message.content, streaming]);
 

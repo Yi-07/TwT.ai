@@ -8,7 +8,6 @@ interface ArtifactSandboxProps {
   artifactType: ArtifactType;
   title: string;
   content: string;
-  expanded?: boolean;
   onSendPrompt?: (text: string) => void;
 }
 
@@ -190,7 +189,6 @@ export function ArtifactSandbox({
   artifactType,
   title,
   content,
-  expanded: _expanded,
   onSendPrompt,
 }: ArtifactSandboxProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
