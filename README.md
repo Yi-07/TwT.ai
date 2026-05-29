@@ -1,126 +1,125 @@
 # TwT.ai
 
-Multi-model AI chat frontend inspired by claude.ai. Switch between Claude, DeepSeek, ModelScope, and custom providers with persistent conversation history, streaming responses, per-model settings, and an Artifact system that renders interactive HTML/React/SVG views inline.
+受 claude.ai 启发的多模型 AI 聊天前端。支持 Claude、DeepSeek、ModelScope 和自定义供应商切换，具备持久化对话历史、流式响应、按模型参数设置，以及内嵌交互式 HTML/React/SVG 视图的 Artifact 系统。
 
-[中文文档](README.zh-CN.md)
+[English](README.en.md)
 
-![TwT.ai Screenshot](ThemeSwitch.gif)
+![TwT.ai 演示](ThemeSwitch.gif)
 
-## Features
+## 特性
 
-- **Multi-model** — Claude, DeepSeek, ModelScope, and custom OpenAI-compatible providers
-- **Streaming** — SSE-based real-time response rendering with RAF-throttled updates
-- **Artifact system** — Model-generated React / HTML / SVG rendered in sandboxed iframes
-- **Structured input** — `<ask_user>` tab-based question cards for guided information collection
-- **Dual theme** — Warm Canvas light + Midnight dark, persisted to localStorage
-- **Conversation history** — IndexedDB-persisted, sidebar navigation, auto-trim (50 convos, 200 msgs)
-- **Per-model settings** — Temperature, max tokens, system prompt per provider
-- **Copy / Edit / Retry** — Message-level controls on user bubbles
-- **Debug mode** — `NEXT_PUBLIC_DEBUG` gate with unified logger + real-time DebugPanel
+- **多模型** — Claude、DeepSeek、ModelScope，以及自定义 OpenAI 兼容供应商
+- **流式响应** — 基于 SSE 的实时渲染，RAF 节流更新
+- **Artifact 系统** — 模型生成的 React / HTML / SVG 在沙箱化 iframe 中渲染
+- **结构化输入** — `<ask_user>` 选项卡式问题卡片，引导用户逐步提供信息
+- **双主题** — 暖白画布浅色 + 午夜深色，偏好持久化到 localStorage
+- **对话历史** — IndexedDB 持久化，侧边栏导航，自动裁剪（50 会话 / 200 消息）
+- **按模型设置** — Temperature、Max tokens、System prompt 每个供应商独立配置
+- **复制 / 编辑 / 重试** — 用户消息气泡上的操作按钮
+- **调试模式** — `NEXT_PUBLIC_DEBUG` 开关，统一日志 + 实时调试面板
 
-## Quick Start
+## 快速开始
 
 ```bash
-# Clone
+# 克隆
 git clone https://github.com/Yi-07/TwT.ai.git
 cd TwT.ai
 
-# Install
+# 安装
 pnpm install
 
-# Configure
+# 配置
 cp .env.example .env.local
-# Edit .env.local with your API keys
+# 编辑 .env.local 填入你的 API 密钥
 
-# Run
+# 启动
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+打开 [http://localhost:3000](http://localhost:3000)。
 
-## Configuration
+## 配置
 
-### Built-in providers
+### 内置供应商
 
-| Provider | Env vars |
-|----------|----------|
-| Claude | `ANTHROPIC_API_KEY`, `CLAUDE_MODEL`, `CLAUDE_BASE_URL` |
-| DeepSeek | `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL` |
-| ModelScope | `DASHSCOPE_API_KEY`, `MODELSCOPE_MODEL` |
+| 供应商 | 环境变量 |
+|--------|----------|
+| Claude | `ANTHROPIC_API_KEY`、`CLAUDE_MODEL`、`CLAUDE_BASE_URL` |
+| DeepSeek | `DEEPSEEK_API_KEY`、`DEEPSEEK_MODEL` |
+| ModelScope | `DASHSCOPE_API_KEY`、`MODELSCOPE_MODEL` |
 
-### Custom providers
+### 自定义供应商
 
-Add a `CUSTOM_PROVIDERS` env var with a JSON array of OpenAI-compatible endpoints:
+在 `CUSTOM_PROVIDERS` 环境变量中填写 OpenAI 兼容接口的 JSON 数组：
 
 ```bash
 CUSTOM_PROVIDERS=[{"id":"groq","name":"Groq","type":"openai-compatible","apiKey":"gsk_xxx","baseUrl":"https://api.groq.com/openai/v1","model":"llama3-70b-8192"}]
 ```
 
-Restart `pnpm dev` — no code changes needed.
+重启 `pnpm dev` 即可生效，无需修改代码。
 
-### Model defaults
+### 模型默认值
 
 ```bash
-NEXT_PUBLIC_DEFAULT_PROVIDER=deepseek      # Active provider on first load
-NEXT_PUBLIC_DEFAULT_TEMPERATURE=1          # Shared between API and Settings panel
-NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192        # Shared between API and Settings panel
+NEXT_PUBLIC_DEFAULT_PROVIDER=deepseek      # 首次加载时的默认供应商
+NEXT_PUBLIC_DEFAULT_TEMPERATURE=1          # API 和 Settings 面板共用
+NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192        # API 和 Settings 面板共用
 ```
 
-### Server-side persistence & production lockdown
+### 服务端持久化与生产环境锁定
 
-See the [Deployment](#deployment) section for PostgreSQL setup and production
-configuration.
+参见 [部署](#部署) 章节的 PostgreSQL 配置和生产环境设置。
 
-## Tech Stack
+## 技术栈
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 |
-| State | Zustand v5 + IndexedDB persist |
+| 层级 | 技术 |
+|------|------|
+| 框架 | Next.js 15 (App Router) |
+| 语言 | TypeScript (strict) |
+| 样式 | Tailwind CSS v4 |
+| 状态管理 | Zustand v5 + IndexedDB 持久化 |
 | Markdown | react-markdown + remark-gfm |
-| Package manager | pnpm |
+| 包管理器 | pnpm |
 
-## Architecture
+## 架构
 
 ```
 POST /api/chat → Provider Registry → Claude / DeepSeek / ModelScope
                                    → ReadableStream (SSE)
-                                   → useStream hook (RAF-throttled)
+                                   → useStream hook (RAF 节流)
                                    → MessageBubble (Markdown + Artifacts)
 ```
 
-- **`lib/providers/`** — Model adapters. `config.ts` centralises all provider definitions. `index.ts` (server-only) creates instances by type. `registry.ts` (client-safe) exports metadata.
-- **`lib/store/`** — Zustand stores: `conversation.ts` (IndexedDB), `model.ts` (localStorage).
-- **`components/`** — Chat UI, sidebar, model controls, theme toggle, debug panel, artifact sandbox.
-- **`lib/utils/`** — Artifact parser (state machine), `<ask_user>` parser, logger.
+- **`lib/providers/`** — 模型适配器。`config.ts` 集中管理所有供应商定义。`index.ts`（仅服务端）按类型创建实例。`registry.ts`（客户端安全）导出元数据。
+- **`lib/store/`** — Zustand 状态库：`conversation.ts`（IndexedDB）、`model.ts`（localStorage）。
+- **`components/`** — 聊天界面、侧边栏、模型控件、主题切换、调试面板、Artifact 沙箱。
+- **`lib/utils/`** — Artifact 解析器（状态机）、`<ask_user>` 解析器、日志工具。
 
-See [CLAUDE.md](CLAUDE.md) for detailed architecture docs and contribution guidelines.
+详细架构文档和贡献指南见 [CLAUDE.md](CLAUDE.md)。
 
-## Commands
+## 命令
 
-| Command | Description |
-|---------|------------|
-| `pnpm dev` | Start dev server |
-| `pnpm build` | Production build |
-| `pnpm tsc --noEmit` | Type check |
-| `pnpm lint` | ESLint |
+| 命令 | 说明 |
+|------|------|
+| `pnpm dev` | 启动开发服务器 |
+| `pnpm build` | 生产构建 |
+| `pnpm tsc --noEmit` | 类型检查 |
+| `pnpm lint` | ESLint 检查 |
 
-## Deployment
+## 部署
 
-### Vercel (recommended)
+### Vercel（推荐）
 
-1. Push the repo to GitHub
-2. Go to [vercel.com](https://vercel.com) → New Project → import your repo
-3. In **Environment Variables**, add your API keys and any config from [.env.example](.env.example)
-4. Deploy — Vercel auto-detects Next.js
+1. 推送代码到 GitHub
+2. 打开 [vercel.com](https://vercel.com) → New Project → 导入你的仓库
+3. 在 **Environment Variables** 中添加 API 密钥和 [.env.example](.env.example) 中的配置
+4. 部署 — Vercel 自动识别 Next.js
 
-### Server-side persistence (optional)
+### 服务端持久化（可选）
 
-To sync conversations across devices, enable PostgreSQL storage:
+需要跨设备同步对话时，启用 PostgreSQL 存储：
 
-1. Create a free [Neon](https://neon.tech) database and run the schema:
+1. 在 [Neon](https://neon.tech) 创建免费数据库并执行建表：
 
 ```sql
 CREATE TABLE IF NOT EXISTS state (
@@ -130,30 +129,30 @@ CREATE TABLE IF NOT EXISTS state (
 );
 ```
 
-2. Add these env vars in Vercel:
+2. 在 Vercel 中添加环境变量：
 
 ```
 NEXT_PUBLIC_STORAGE_MODE=server
-ACCESS_SECRET=<random-string>
-NEXT_PUBLIC_ACCESS_SECRET=<same-random-string>
+ACCESS_SECRET=<随机字符串>
+NEXT_PUBLIC_ACCESS_SECRET=<与上相同>
 DATABASE_URL=postgres://...
 ```
 
-3. Redeploy. Conversations now persist in PostgreSQL.
+3. 重新部署。对话数据现在持久化到 PostgreSQL。
 
-### Production lockdown
+### 生产环境锁定
 
 ```bash
-NEXT_PUBLIC_ALLOW_USER_SETTINGS=false  # Hide Settings panel from end users
-NEXT_PUBLIC_DEBUG=false                # Ensure debug tools are off
+NEXT_PUBLIC_ALLOW_USER_SETTINGS=false  # 对最终用户隐藏 Settings 面板
+NEXT_PUBLIC_DEBUG=false                # 确保调试工具关闭
 ```
 
-## Vendored Dependencies
+## 沙箱依赖（本地托管）
 
-Artifact sandbox dependencies are vendored in `public/vendor/` — no external CDN calls at runtime:
+Artifact 沙箱依赖托管在 `public/vendor/`，运行时无外部 CDN 请求：
 
-| File | Source | Version |
-|------|--------|---------|
+| 文件 | 来源 | 版本 |
+|------|------|------|
 | `react.umd.js` | cdnjs / React | 18.3.1 |
 | `react-dom.umd.js` | cdnjs / ReactDOM | 18.3.1 |
 | `babel.min.js` | cdnjs / Babel Standalone | 7.28.4 |
@@ -161,6 +160,6 @@ Artifact sandbox dependencies are vendored in `public/vendor/` — no external C
 | `lodash.umd.js` | unpkg / lodash | 4.17.21 |
 | `prop-types.umd.js` | cdnjs / prop-types | — |
 
-## License
+## 许可证
 
 MIT
