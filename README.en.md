@@ -141,6 +141,12 @@ DATABASE_URL=postgres://...
 
 3. Redeploy. Conversations now persist in PostgreSQL.
 
+### Access protection (optional)
+
+```bash
+ACCESS_PASSWORD=your-password    # If set, password required on first visit
+```
+
 ### Production lockdown
 
 ```bash

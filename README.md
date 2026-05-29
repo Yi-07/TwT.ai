@@ -140,6 +140,12 @@ DATABASE_URL=postgres://...
 
 3. 重新部署。对话数据现在持久化到 PostgreSQL。
 
+### 访问保护（可选）
+
+```bash
+ACCESS_PASSWORD=你的密码    # 设置后首次访问需要输入密码
+```
+
 ### 生产环境锁定
 
 ```bash
