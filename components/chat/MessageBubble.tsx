@@ -30,7 +30,7 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
     return (
       <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-code-block [&_pre]:text-ink dark:[&_pre]:text-on-dark-soft [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-code-block [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_table]:w-full [&_th]:border [&_th]:border-hairline [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-hairline [&_td]:px-3 [&_td]:py-2">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {seg.content}
+          {seg.content.replace(/~/g, "\\~")}
         </ReactMarkdown>
       </div>
     );
