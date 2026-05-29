@@ -136,6 +136,47 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture docs and contribution guide
 | `pnpm tsc --noEmit` | Type check |
 | `pnpm lint` | ESLint |
 
+## Deployment
+
+### Vercel (recommended)
+
+1. Push the repo to GitHub
+2. Go to [vercel.com](https://vercel.com) → New Project → import your repo
+3. In **Environment Variables**, add your API keys and any config from [.env.example](.env.example)
+4. Deploy — Vercel auto-detects Next.js
+
+### Server-side persistence (optional)
+
+To sync conversations across devices, enable PostgreSQL storage:
+
+1. Create a free [Neon](https://neon.tech) database and run the schema:
+
+```sql
+CREATE TABLE IF NOT EXISTS state (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+2. Add these env vars in Vercel:
+
+```
+NEXT_PUBLIC_STORAGE_MODE=server
+ACCESS_SECRET=<random-string>
+NEXT_PUBLIC_ACCESS_SECRET=<same-random-string>
+DATABASE_URL=postgres://...
+```
+
+3. Redeploy. Conversations now persist in PostgreSQL.
+
+### Production lockdown
+
+```bash
+NEXT_PUBLIC_ALLOW_USER_SETTINGS=false  # Hide Settings panel from end users
+NEXT_PUBLIC_DEBUG=false                # Ensure debug tools are off
+```
+
 ## Vendored Dependencies
 
 Artifact sandbox dependencies are vendored in `public/vendor/` — no external CDN calls at runtime:

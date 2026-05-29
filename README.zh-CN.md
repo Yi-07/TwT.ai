@@ -108,6 +108,47 @@ POST /api/chat → Provider Registry → Claude / DeepSeek / ModelScope
 | `pnpm tsc --noEmit` | 类型检查 |
 | `pnpm lint` | ESLint 检查 |
 
+## 部署
+
+### Vercel（推荐）
+
+1. 推送代码到 GitHub
+2. 打开 [vercel.com](https://vercel.com) → New Project → 导入你的仓库
+3. 在 **Environment Variables** 中添加 API 密钥和 [.env.example](.env.example) 中的配置
+4. 部署 — Vercel 自动识别 Next.js
+
+### 服务端持久化（可选）
+
+需要跨设备同步对话时，启用 PostgreSQL 存储：
+
+1. 在 [Neon](https://neon.tech) 创建免费数据库并执行建表：
+
+```sql
+CREATE TABLE IF NOT EXISTS state (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+2. 在 Vercel 中添加环境变量：
+
+```
+NEXT_PUBLIC_STORAGE_MODE=server
+ACCESS_SECRET=<随机字符串>
+NEXT_PUBLIC_ACCESS_SECRET=<与上相同>
+DATABASE_URL=postgres://...
+```
+
+3. 重新部署。对话数据现在持久化到 PostgreSQL。
+
+### 生产环境锁定
+
+```bash
+NEXT_PUBLIC_ALLOW_USER_SETTINGS=false  # 对最终用户隐藏 Settings 面板
+NEXT_PUBLIC_DEBUG=false                # 确保调试工具关闭
+```
+
 ## 沙箱依赖（本地托管）
 
 Artifact 沙箱依赖托管在 `public/vendor/`，运行时无外部 CDN 请求：
