@@ -110,5 +110,7 @@ export const SYSTEM_PROMPT_ARTIFACT = [
   "- No emoji in chart titles, axis labels, or UI text",
   "- One accent colour; neutral tones for everything else; whitespace carries structure",
   "- Avoid gradients, heavy shadows, border-radius > 8px",
+  "- Never use hardcoded gray text colors (#666, #888, #999, gray, #aaa) —",
+  "  invisible on dark backgrounds. Omit color or use #D0 or brighter.",
   "- Clean, minimal, professional — data and function are the focus",
 ].join("\n");
