@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthGate } from "@/components/auth/AuthGate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,6 +23,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const needsAuth = !!process.env.ACCESS_PASSWORD;
+  const content = needsAuth ? <AuthGate>{children}</AuthGate> : children;
   return (
     <html
       lang="en"
@@ -35,7 +38,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">{content}</body>
     </html>
   );
 }
