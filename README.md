@@ -63,7 +63,7 @@ CUSTOM_PROVIDERS=[{"id":"groq","name":"Groq","type":"openai-compatible","apiKey"
 ```bash
 NEXT_PUBLIC_DEFAULT_PROVIDER=deepseek      # 首次加载时的默认供应商
 NEXT_PUBLIC_DEFAULT_TEMPERATURE=1          # API 和 Settings 面板共用
-NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192        # API 和 Settings 面板共用
+NEXT_PUBLIC_DEFAULT_MAX_TOKENS=131072      # API 和 Settings 面板共用
 ```
 
 ### 服务端持久化与生产环境锁定

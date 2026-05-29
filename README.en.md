@@ -63,7 +63,7 @@ Restart `pnpm dev` — no code changes needed.
 ```bash
 NEXT_PUBLIC_DEFAULT_PROVIDER=deepseek      # Active provider on first load
 NEXT_PUBLIC_DEFAULT_TEMPERATURE=1          # Shared between API and Settings panel
-NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192        # Shared between API and Settings panel
+NEXT_PUBLIC_DEFAULT_MAX_TOKENS=131072      # Shared between API and Settings panel
 ```
 
 ### Server-side persistence & production lockdown
