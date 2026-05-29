@@ -16,6 +16,8 @@ Multi-model AI chat frontend inspired by claude.ai. Switch between Claude, DeepS
 - **Copy / Edit / Retry** — Message-level controls on user bubbles
 - **Debug mode** — `NEXT_PUBLIC_DEBUG` gate with unified logger + real-time DebugPanel
 
+![TwT.ai Screenshot](ThemeSwitch.gif)
+
 ## Quick Start
 
 ```bash
