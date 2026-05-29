@@ -525,7 +525,7 @@ NEXT_PUBLIC_DEFAULT_PROVIDER=        # Default AI provider (claude | deepseek | 
 NEXT_PUBLIC_DEBUG=false              # Enable debug panel + verbose console logging
 NEXT_PUBLIC_ALLOW_USER_SETTINGS=true # Set to "false" in production to hide settings panel
 NEXT_PUBLIC_DEFAULT_TEMPERATURE=1    # Default temperature (route.ts + Settings panel)
-NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192  # Default max output tokens (route.ts + Settings panel)
+NEXT_PUBLIC_DEFAULT_MAX_TOKENS=131072 # Default max output tokens — 128K (Claude max)
 
 # Server-side persistence (optional — unset defaults to browser IndexedDB)
 NEXT_PUBLIC_STORAGE_MODE=server      # Set to "server" for PostgreSQL multi-device sync
