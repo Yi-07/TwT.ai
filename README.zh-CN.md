@@ -4,6 +4,8 @@
 
 [English](README.md)
 
+![TwT.ai 演示](ThemeSwitch.gif)
+
 ## 特性
 
 - **多模型** — Claude、DeepSeek、ModelScope，以及自定义 OpenAI 兼容供应商
@@ -15,8 +17,6 @@
 - **按模型设置** — Temperature、Max tokens、System prompt 每个供应商独立配置
 - **复制 / 编辑 / 重试** — 用户消息气泡上的操作按钮
 - **调试模式** — `NEXT_PUBLIC_DEBUG` 开关，统一日志 + 实时调试面板
-
-![TwT.ai 演示](ThemeSwitch.gif)
 
 ## 快速开始
 
@@ -66,11 +66,9 @@ NEXT_PUBLIC_DEFAULT_TEMPERATURE=1          # API 和 Settings 面板共用
 NEXT_PUBLIC_DEFAULT_MAX_TOKENS=8192        # API 和 Settings 面板共用
 ```
 
-### 生产环境锁定
+### 服务端持久化与生产环境锁定
 
-```bash
-NEXT_PUBLIC_ALLOW_USER_SETTINGS=false      # 对用户隐藏 Settings 面板
-```
+参见 [部署](#部署) 章节的 PostgreSQL 配置和生产环境设置。
 
 ## 技术栈
 
