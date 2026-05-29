@@ -1,5 +1,7 @@
 import { getState, setState, deleteState } from "@/lib/db";
 
+export const maxDuration = 60;
+
 function auth(req: Request) {
   return (
     req.headers.get("authorization") ===

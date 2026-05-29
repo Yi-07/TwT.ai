@@ -6,6 +6,8 @@ import { getDefaultModel } from "@/lib/providers/registry";
 import { SYSTEM_PROMPT_ARTIFACT } from "@/lib/defaults";
 import type { Message } from "@/types/conversation";
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body || !Array.isArray(body.messages)) {
