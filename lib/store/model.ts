@@ -38,6 +38,13 @@ export const useModelStore = create<ModelState>()(
     }),
     {
       name: "twt-model",
+      partialize: (state) => ({ activeModelId: state.activeModelId }),
+      merge: (persisted, current) => ({
+        ...current,
+        activeModelId:
+          (persisted as { activeModelId?: string })?.activeModelId ??
+          current.activeModelId,
+      }),
     },
   ),
 );
