@@ -291,34 +291,39 @@ export function MessageBubble({
           className="shrink-0 mt-0.5"
           aria-hidden="true"
         >
+          <defs>
+            <linearGradient id="av-eye" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%">
+                <animate attributeName="stop-color" values="#A09BE8;#D4C8FF;#A09BE8" dur="2.2s" repeatCount="indefinite"/>
+              </stop>
+              <stop offset="100%">
+                <animate attributeName="stop-color" values="#D4C8FF;#A09BE8;#D4C8FF" dur="2.2s" repeatCount="indefinite"/>
+              </stop>
+            </linearGradient>
+            <linearGradient id="av-mouth" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%">
+                <animate attributeName="stop-color" values="#67E8C9;#B8F5E8;#67E8C9" dur="2.2s" repeatCount="indefinite"/>
+              </stop>
+              <stop offset="100%">
+                <animate attributeName="stop-color" values="#B8F5E8;#67E8C9;#B8F5E8" dur="2.2s" repeatCount="indefinite"/>
+              </stop>
+            </linearGradient>
+          </defs>
+          <style>{`
+            .av-eye { transform-box: fill-box; transform-origin: center; animation: av-blink 3s ease-in-out infinite; }
+            @keyframes av-blink { 0%,38%,62%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.07); } }
+            .av-brow { transform-box: fill-box; transform-origin: center; animation: av-brow-lift 3s ease-in-out infinite; }
+            @keyframes av-brow-lift { 0%,38%,62%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+          `}</style>
           <rect width="128" height="128" rx="28" fill="#1a1f2e" />
           <rect x="0" y="0" width="128" height="56" rx="28" fill="white" opacity="0.05" />
-          <rect x="24" y="22" width="30" height="6" rx="3" fill="#A09BE8" />
-          <rect x="33" y="34" width="7" height="24" rx="3.5" fill="#A09BE8" />
-          <rect x="74" y="22" width="30" height="6" rx="3" fill="#A09BE8" />
-          <rect x="88" y="34" width="7" height="24" rx="3.5" fill="#A09BE8" />
-          <path
-            d="M36 84 Q45 98 64 88 Q83 98 92 84"
-            fill="none"
-            stroke="#67E8C9"
-            strokeWidth="6.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M36 84 Q33 79 36 75"
-            fill="none"
-            stroke="#67E8C9"
-            strokeWidth="6.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M92 84 Q95 79 92 75"
-            fill="none"
-            stroke="#67E8C9"
-            strokeWidth="6.5"
-            strokeLinecap="round"
-          />
+          <rect className="av-brow" x="24" y="22" width="30" height="6" rx="3" fill="url(#av-eye)" />
+          <rect className="av-eye" x="33" y="34" width="7" height="24" rx="3.5" fill="url(#av-eye)" />
+          <rect className="av-brow" x="74" y="22" width="30" height="6" rx="3" fill="url(#av-eye)" />
+          <rect className="av-eye" x="88" y="34" width="7" height="24" rx="3.5" fill="url(#av-eye)" />
+          <path d="M36 84 Q45 98 64 88 Q83 98 92 84" fill="none" stroke="url(#av-mouth)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M36 84 Q33 79 36 75" fill="none" stroke="url(#av-mouth)" strokeWidth="6.5" strokeLinecap="round" />
+          <path d="M92 84 Q95 79 92 75" fill="none" stroke="url(#av-mouth)" strokeWidth="6.5" strokeLinecap="round" />
         </svg>
 
         {/* Content area */}
