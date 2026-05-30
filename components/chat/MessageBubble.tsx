@@ -164,6 +164,7 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
 interface MessageBubbleProps {
   message: Message;
   streaming?: boolean;
+  isSlow?: boolean;
   onSendPrompt?: (text: string) => void;
   isLastUserMsg?: boolean;
   onEditSubmit?: (msgId: string, newText: string) => void;
@@ -173,6 +174,7 @@ interface MessageBubbleProps {
 export function MessageBubble({
   message,
   streaming,
+  isSlow,
   onSendPrompt,
   isLastUserMsg,
   onEditSubmit,
@@ -280,25 +282,82 @@ export function MessageBubble({
 
   return (
     <div className="flex w-full animate-fade-in justify-start">
-      <div className="w-full max-w-3xl px-4 py-2">
-        <div className="group">
-          <div className="flex flex-col gap-2">
-            {segments.map((seg) => (
-              <SegmentRenderer key={seg.id} seg={seg} onSendPrompt={onSendPrompt} />
-            ))}
+      <div className="flex w-full max-w-3xl items-start gap-3 px-4 py-2">
+        {/* Avatar — robot face, permanent for every assistant message */}
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 128 128"
+          className="shrink-0 mt-0.5"
+          aria-hidden="true"
+        >
+          <rect width="128" height="128" rx="28" fill="#1a1f2e" />
+          <rect x="0" y="0" width="128" height="56" rx="28" fill="white" opacity="0.05" />
+          <rect x="24" y="22" width="30" height="6" rx="3" fill="#A09BE8" />
+          <rect x="33" y="34" width="7" height="24" rx="3.5" fill="#A09BE8" />
+          <rect x="74" y="22" width="30" height="6" rx="3" fill="#A09BE8" />
+          <rect x="88" y="34" width="7" height="24" rx="3.5" fill="#A09BE8" />
+          <path
+            d="M36 84 Q45 98 64 88 Q83 98 92 84"
+            fill="none"
+            stroke="#67E8C9"
+            strokeWidth="6.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M36 84 Q33 79 36 75"
+            fill="none"
+            stroke="#67E8C9"
+            strokeWidth="6.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M92 84 Q95 79 92 75"
+            fill="none"
+            stroke="#67E8C9"
+            strokeWidth="6.5"
+            strokeLinecap="round"
+          />
+        </svg>
+
+        {/* Content area */}
+        <div className="min-w-0 flex-1">
+          <div className="group">
+            {message.content === "" && streaming ? (
+              <span className="text-sm text-body dark:text-on-dark-soft">
+                {isSlow
+                  ? "模型响应较慢，请耐心等待...或点击取消后重试"
+                  : "TωT 思考中..."}
+              </span>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {segments.map((seg) => (
+                  <SegmentRenderer
+                    key={seg.id}
+                    seg={seg}
+                    onSendPrompt={onSendPrompt}
+                  />
+                ))}
+              </div>
+            )}
+            {/* Hover Copy for assistant messages — only after streaming completes */}
+            {!streaming && (
+              <div className="mt-1.5 flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  onClick={handleCopy}
+                  className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft"
+                  aria-label="Copy"
+                >
+                  {copied ? (
+                    <span className="text-[10px] font-medium">✓</span>
+                  ) : (
+                    <Copy size={13} strokeWidth={1.5} />
+                  )}
+                </button>
+              </div>
+            )}
           </div>
-          {/* Hover Copy for assistant messages — only after streaming completes */}
-          {!streaming && (
-          <div className="mt-1.5 flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100">
-            <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
-              {copied ? (
-                <span className="text-[10px] font-medium">✓</span>
-              ) : (
-                <Copy size={13} strokeWidth={1.5} />
-              )}
-            </button>
-          </div>
-          )}
         </div>
       </div>
     </div>

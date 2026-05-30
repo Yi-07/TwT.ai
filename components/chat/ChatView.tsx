@@ -233,12 +233,6 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
     }
   }, [hasError, wasCancelled, error]);
 
-  // StreamingIndicator shows while waiting for the first chunk
-  const waitingForFirstChunk =
-    isStreaming &&
-    lastMsg?.role === "assistant" &&
-    lastMsg.content === "";
-
   return (
     <div className="flex h-screen overflow-hidden bg-canvas dark:bg-surface-dark">
       {/* Narrow overlay backdrop */}
@@ -353,7 +347,6 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
         {/* Messages */}
         <MessageList
           messages={allMessages}
-          isStreaming={waitingForFirstChunk}
           streaming={isStreaming}
           isSlow={isSlowResponse}
           onSendPrompt={handleSendPrompt}

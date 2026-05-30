@@ -3,11 +3,9 @@
 import { useEffect, useRef } from "react";
 import type { Message } from "@/types/conversation";
 import { MessageBubble } from "./MessageBubble";
-import { StreamingIndicator } from "./StreamingIndicator";
 
 interface MessageListProps {
   messages: Message[];
-  isStreaming: boolean;
   streaming?: boolean;
   isSlow: boolean;
   onSendPrompt?: (text: string) => void;
@@ -17,7 +15,6 @@ interface MessageListProps {
 
 export function MessageList({
   messages,
-  isStreaming,
   streaming,
   isSlow,
   onSendPrompt,
@@ -49,7 +46,7 @@ export function MessageList({
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, []);
 
-  if (messages.length === 0 && !isStreaming) {
+  if (messages.length === 0 && !streaming) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-soft dark:text-on-dark-soft">Start a conversation</p>
@@ -68,13 +65,13 @@ export function MessageList({
             key={msg.id}
             message={msg}
             streaming={streaming}
+            isSlow={isSlow}
             onSendPrompt={onSendPrompt}
             isLastUserMsg={i === messages.length - 1 - lastUserIdx}
             onEditSubmit={onEditSubmit}
             onRetry={onRetry}
           />
         ))}
-        {isStreaming && <StreamingIndicator isSlow={isSlow} />}
         <div ref={bottomRef} />
       </div>
     </div>
