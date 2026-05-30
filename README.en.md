@@ -145,8 +145,7 @@ DATABASE_URL=postgres://...
 
 ```bash
 ACCESS_PASSWORD=your-password           # Optional: if set, password-gates the site
-NEXT_PUBLIC_ALLOW_USER_SETTINGS=false  # Hide Settings panel from end users
-NEXT_PUBLIC_DEBUG=false                # Ensure debug tools are off
+NEXT_PUBLIC_DEBUG=false                # Ensure debug tools (incl. Settings panel) are off
 ```
 
 ## Vendored Dependencies

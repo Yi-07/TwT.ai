@@ -532,8 +532,7 @@ DASHSCOPE_API_KEY=      # ModelScope (Alibaba Cloud DashScope)
 MODELSCOPE_MODEL=       # ModelScope model version (e.g. qwen-plus)
 # Future providers: add key here + register in /lib/providers/index.ts and /lib/providers/registry.ts
 NEXT_PUBLIC_DEFAULT_PROVIDER=        # Default AI provider (claude | deepseek | modelscope)
-NEXT_PUBLIC_DEBUG=false              # Enable debug panel + verbose console logging
-NEXT_PUBLIC_ALLOW_USER_SETTINGS=true # Set to "false" in production to hide settings panel
+NEXT_PUBLIC_DEBUG=false              # Enable debug panel + model settings panel + verbose logging
 NEXT_PUBLIC_DEFAULT_TEMPERATURE=1    # Default temperature (route.ts + Settings panel)
 NEXT_PUBLIC_DEFAULT_MAX_TOKENS=131072 # Default max output tokens — 128K (Claude max)
 

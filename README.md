@@ -144,8 +144,7 @@ DATABASE_URL=postgres://...
 
 ```bash
 ACCESS_PASSWORD=你的密码               # 可选：设置后首次访问需要输入密码
-NEXT_PUBLIC_ALLOW_USER_SETTINGS=false  # 对最终用户隐藏 Settings 面板
-NEXT_PUBLIC_DEBUG=false                # 确保调试工具关闭
+NEXT_PUBLIC_DEBUG=false                # 确保调试工具关闭（含 Settings 面板）
 ```
 
 ## 沙箱依赖（本地托管）

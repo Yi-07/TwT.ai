@@ -21,7 +21,7 @@ export function ModelSettings() {
     [activeModelId, updateModelSettings],
   );
 
-  if (process.env.NEXT_PUBLIC_ALLOW_USER_SETTINGS !== "true") return null;
+  if (process.env.NEXT_PUBLIC_DEBUG !== "true") return null;
 
   return (
     <div>
