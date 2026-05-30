@@ -1,26 +1,119 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect x="0" y="0" width="128" height="128" rx="28" fill="#0f172a"/>
+  <defs>
+    <!-- Radial bg: deep indigo with top-left light -->
+    <radialGradient id="bg-grad" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#253555"/>
+      <stop offset="100%" stop-color="#1a2540"/>
+    </radialGradient>
 
-  <!-- Left eyebrow -->
-  <rect x="24" y="22" width="30" height="6" rx="3" fill="#818cf8"/>
-  <!-- Left eye -->
-  <rect x="33" y="34" width="7" height="24" rx="3.5" fill="#818cf8"/>
+    <!-- Eyebrow / eye: lavender shimmer -->
+    <linearGradient id="eye-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%">
+        <animate attributeName="stop-color"
+          values="#A09BE8;#D4C8FF;#A09BE8" dur="2.2s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%">
+        <animate attributeName="stop-color"
+          values="#D4C8FF;#A09BE8;#D4C8FF" dur="2.2s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
 
-  <!-- Right eyebrow -->
-  <rect x="74" y="22" width="30" height="6" rx="3" fill="#818cf8"/>
-  <!-- Right eye -->
-  <rect x="88" y="34" width="7" height="24" rx="3.5" fill="#818cf8"/>
+    <!-- Mouth: mint shimmer -->
+    <linearGradient id="mouth-grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%">
+        <animate attributeName="stop-color"
+          values="#67E8C9;#B8F5E8;#67E8C9" dur="2.2s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%">
+        <animate attributeName="stop-color"
+          values="#B8F5E8;#67E8C9;#B8F5E8" dur="2.2s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
 
-  <!-- ω mouth -->
-  <path d="M36 74 Q45 88 64 78 Q83 88 92 74"
-        fill="none" stroke="#67e8f9" stroke-width="6.5"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- left corner tuck -->
-  <path d="M36 74 Q33 69 36 65"
-        fill="none" stroke="#67e8f9" stroke-width="6.5"
-        stroke-linecap="round"/>
-  <!-- right corner tuck -->
-  <path d="M92 74 Q95 69 92 65"
-        fill="none" stroke="#67e8f9" stroke-width="6.5"
-        stroke-linecap="round"/>
+    <!-- Inner glow on face elements -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Outer purple glow (dark mode lift) -->
+    <filter id="outer-glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="0.3 0 0.5 0 0
+                0.2 0 0.6 0 0
+                0.8 0 1   0 0
+                0   0 0   0.45 0" result="colored"/>
+      <feMerge><feMergeNode in="colored"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    /* Float animation on the whole icon (for StreamingIndicator use) */
+    .face { animation: face-float 2.4s ease-in-out infinite; transform-origin: 64px 64px; }
+    @keyframes face-float {
+      0%,100% { transform: translateY(0)   scale(1); }
+      50%      { transform: translateY(-4px) scale(1.04); }
+    }
+
+    /* Blink — scaleY from element center via transform-box */
+    .eye {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: blink 3s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%,38%,62%,100% { transform: scaleY(1); }
+      50%              { transform: scaleY(0.07); }
+    }
+
+    /* Eyebrow lift synced with blink */
+    .brow {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: brow-lift 3s ease-in-out infinite;
+    }
+    @keyframes brow-lift {
+      0%,38%,62%,100% { transform: translateY(0); }
+      50%              { transform: translateY(-3px); }
+    }
+  </style>
+
+  <!-- Outer glow wrapper (gives purple lift on dark bg) -->
+  <g filter="url(#outer-glow)">
+    <rect width="128" height="128" rx="28" fill="url(#bg-grad)"/>
+  </g>
+
+  <!-- Top highlight streak -->
+  <rect x="0" y="0" width="128" height="56" rx="28" fill="white" opacity="0.05"/>
+
+  <!-- Face group (floats together) -->
+  <g class="face">
+    <!-- Left eyebrow -->
+    <rect class="brow" x="24" y="22" width="30" height="6" rx="3"
+          fill="url(#eye-grad)" filter="url(#glow)"/>
+    <!-- Left eye -->
+    <rect class="eye" x="33" y="34" width="7" height="24" rx="3.5"
+          fill="url(#eye-grad)" filter="url(#glow)"/>
+
+    <!-- Right eyebrow -->
+    <rect class="brow" x="74" y="22" width="30" height="6" rx="3"
+          fill="url(#eye-grad)" filter="url(#glow)"/>
+    <!-- Right eye -->
+    <rect class="eye" x="88" y="34" width="7" height="24" rx="3.5"
+          fill="url(#eye-grad)" filter="url(#glow)"/>
+
+    <!-- ω mouth -->
+    <path d="M36 84 Q45 98 64 88 Q83 98 92 84"
+          fill="none" stroke="url(#mouth-grad)" stroke-width="6.5"
+          stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+    <!-- left corner tuck -->
+    <path d="M36 84 Q33 79 36 75"
+          fill="none" stroke="url(#mouth-grad)" stroke-width="6.5"
+          stroke-linecap="round"/>
+    <!-- right corner tuck -->
+    <path d="M92 84 Q95 79 92 75"
+          fill="none" stroke="url(#mouth-grad)" stroke-width="6.5"
+          stroke-linecap="round"/>
+  </g>
 </svg>
