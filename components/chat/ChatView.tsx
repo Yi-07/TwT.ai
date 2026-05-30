@@ -15,6 +15,7 @@ import { InputBar } from "./InputBar";
 import { AskCard } from "./AskCard";
 import { DebugPanel } from "@/components/debug/DebugPanel";
 import { parseAskCard } from "@/lib/utils/parseAskCard";
+import { waitForPersistence } from "@/lib/store/server-storage";
 import { X, RefreshCw } from "lucide-react";
 
 interface ChatViewProps {
@@ -138,7 +139,11 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
   );
 
   const handleSend = useCallback(
-    (content: string) => {
+    async (content: string) => {
+      // Guard all send paths (InputBar + sandbox sendPrompt) against
+      // duplicate sends while a stream is already in progress.
+      if (isStreaming) return;
+
       lastUserMessageRef.current = content;
       setToast(null);
       setAskDismissed(false);
@@ -146,12 +151,17 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
       const cId = sendMessage(content);
       activeConvIdRef.current = cId;
       if (cId !== activeId) {
+        // When using server storage, wait for the conversation to be
+        // persisted before redirecting — otherwise a fast hard-refresh
+        // on the new page may issue GET /api/conversations before the
+        // POST has landed (Neon cold-start + network latency).
+        await waitForPersistence();
         router.replace(`/c/${cId}`);
       }
 
       doSend(cId);
     },
-    [sendMessage, activeId, doSend, router],
+    [sendMessage, activeId, doSend, router, isStreaming],
   );
 
   const handleRetry = useCallback(() => {
