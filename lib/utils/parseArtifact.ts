@@ -102,12 +102,22 @@ export class ArtifactParser {
         if (closeTag === -1) {
           this.bodyBuf += delta.slice(i);
 
+          // Sniff type for placeholder display (same logic as </artifact> handler)
+          let artType = this.tagType as ArtifactType | undefined;
+          if (!artType) {
+            const t = this.bodyBuf.trimStart();
+            if (/^<svg\b/i.test(t)) artType = "svg";
+            else if (/^<!DOCTYPE|^<html\b|^<head\b|^<body\b/i.test(t)) artType = "html";
+            else artType = "react";
+          }
+
           // Emit or update placeholder with current preview
           const placeholder: Segment = {
             type: "placeholder",
             id: `placeholder-${this.artIdx}`,
             title: this.tagTitle,
             preview: this.bodyBuf,
+            artifactType: artType,
           };
           if (this.placeholderIndex >= 0 && this.placeholderIndex < this.segments.length) {
             this.segments[this.placeholderIndex] = placeholder;
