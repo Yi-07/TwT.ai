@@ -14,7 +14,7 @@ Multi-model AI chat frontend inspired by claude.ai. Switch between Claude, DeepS
 - **Structured input** — `<ask_user>` tab-based question cards for guided information collection
 - **Dual theme** — Warm Canvas light + Midnight dark, persisted to localStorage
 - **Conversation history** — IndexedDB-persisted, sidebar navigation, auto-trim (50 convos, 200 msgs)
-- **Per-model settings** — Temperature, max tokens, system prompt per provider
+- **Per-model settings** — Temperature, max tokens, system prompt per provider (session-only, reset to .env on reload)
 - **Copy / Edit / Retry** — Message-level controls on user bubbles
 - **Debug mode** — `NEXT_PUBLIC_DEBUG` gate with unified logger + real-time DebugPanel
 

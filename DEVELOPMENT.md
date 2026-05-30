@@ -143,7 +143,7 @@ for model artifact output. `app/api/chat/route.ts` always injects it:
 | `MessageList` | `components/chat/MessageList.tsx` | Iterates messages, auto-scroll to bottom, empty state |
 | `MessageBubble` | `components/chat/MessageBubble.tsx` | User: text bubble; Assistant: `react-markdown` + `remark-gfm` |
 | `InputBar` | `components/chat/InputBar.tsx` | Auto-resize textarea, Enter to send, Shift+Enter newline |
-| `StreamingIndicator` | `components/chat/StreamingIndicator.tsx` | Three-dot bouncing animation |
+| `StreamingIndicator` | `components/chat/StreamingIndicator.tsx` | Animated robot face SVG (lavender/mint gradients, blink + float) |
 
 `@tailwindcss/typography` added for `prose` styling on markdown.
 
@@ -434,7 +434,7 @@ Hover-reveal with opacity transition. Lucide-react icons. Copy + download button
 
 ### Placeholder + code preview (4022298, a01c968)
 
-Animated "Generating..." with coral dots and expandable code preview during body state.
+Content-based progress detection (`detectPhase`) with expandable code preview during body state.
 
 ### Scrollbars (5b48e42), RAF throttle (843adef), CDN vendor (51b4d72, 3ac4518, b760deb)
 
@@ -799,7 +799,7 @@ from overflowing the dropdown.
 
 ### Scrollbar, focus border, and colour fixes (045af83, various)
 
-- StreamingIndicator dots: `bg-muted` → `bg-body` for light mode visibility
+- StreamingIndicator: robot face SVG with lavender/mint gradient animations + glow filters
 - InputBar/ModelSettings: `transition-[border-color] duration-200` to
   prevent 1200ms global CSS transition lag on focus
 - Code blocks: `prose-zinc` dark text on light background fixed with
@@ -971,6 +971,61 @@ unaffected.
 
 10. **Lenient parser as defense-in-depth** — Prompt instructs models to write correct
     tags, but parser handles common failure modes (malformed attributes, missing `>`).
+
+---
+
+## Phase 29 — Branding, Hardening & UX Polish
+
+**Commits:** 80cf3c0 → 6424c52 (7 commits)
+
+### StreamingIndicator redesign
+Replaced the three bouncing dots with an animated robot face SVG:
+- Lavender-to-mint gradient shimmer on eyes/mouth via `<animate stop-color>`
+- CSS keyframe animations: `si-blink` (eyes scaleY), `si-brow-lift` (brows translateY),
+  `si-face-float` (whole face translateY + scale)
+- Radial gradient background (#253555 → #1a2540) with top highlight streak
+- SVG `<feGaussianBlur>` + `<feColorMatrix>` glow filters
+- All CSS class/keyframe names prefixed `si-` to prevent conflicts with sidebar icon.
+- `isSlow` warning text preserved — appears below the SVG after 15 s.
+
+### Sidebar brand icon
+`ChatView.tsx` sidebar header: animated robot face (28 px, `sb-` prefixed class/keyframe
+names to isolate from StreamingIndicator) placed left of "TwT.ai" text.
+
+`app/icon.svg`: updated to branded robot face (static; used as favicon).
+
+### Model settings: env-first, session-only
+`lib/store/model.ts` persist `partialize` changed to only save `activeModelId`.
+`merge` ignores old `modelSettings` from localStorage on upgrade.
+temperature / maxTokens / systemPrompt now always read from `.env` on session start;
+Settings panel changes persist only in-memory until the next reload.
+
+### Artifact placeholder: content-based progress
+`PlaceholderBar` (`MessageBubble.tsx`) replaced `setInterval` fake cycling with
+`detectPhase(code, artifactType)` — a pure function that inspects the actual
+streamed code to infer the current phase (e.g. "正在编写样式…" when `<style>` is
+open, "正在编写脚本…" when `<script>` is open). `types/artifact.ts` placeholder
+segment gained `artifactType?` field; `parseArtifact.ts` sniffs type from body
+content when emitting placeholders.
+
+### Storage hardening
+`lib/store/server-storage.ts`:
+- SSR guard (`typeof window === "undefined"` → noop storage) aligns with
+  `storage.ts` — eliminates startup `ERR_INVALID_URL` unhandled rejection.
+- `waitForPersistence()` export tracks latest `setItem` promise.
+
+`components/chat/ChatView.tsx`:
+- `handleSend`: `await waitForPersistence()` before `router.replace()` on new
+  conversations (closes Neon cold-start race window).
+- `handleSend`: `if (isStreaming) return` guard prevents duplicate sends from
+  rapid sandbox `sendPrompt` clicks.
+
+### Color refinements
+- Stop button: solid dark block → hairline-border outline style
+- AskCard selected number badge: `bg-ink`/`bg-on-dark` → unified `bg-primary text-white`
+- ArtifactToolbar title + icons: contrast raised one step
+- Artifact placeholder: dark mode background + border override
+- StreamingIndicator dots (current): dark mode `#B0A89E` for ~5:1 contrast
 
 ---
 

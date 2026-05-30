@@ -12,7 +12,7 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 - Multi-model switching with a unified provider adapter interface
 - Conversation history with sidebar navigation
 - Streaming message rendering via SSE (Server-Sent Events)
-- Per-model parameter settings (temperature, max tokens, system prompt)
+- Per-model parameter settings (temperature, max tokens, system prompt — session-only, reset to .env on reload)
 - Artifact system: model output parsed for `<artifact>` tags and rendered in a
   sandboxed iframe alongside the conversation
 - Dual-theme system (Warm Canvas light + Midnight dark) with
@@ -57,12 +57,12 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │
 ├── components/
 │   ├── chat/
-│   │   ├── ChatView.tsx              # Client orchestrator: wires sidebar, chat, model controls, streaming
+│   │   ├── ChatView.tsx              # Client orchestrator: sidebar brand icon, chat, model controls, streaming
 │   │   ├── MessageList.tsx         # Iterates messages, renders MessageBubble per item
 │   │   ├── MessageBubble.tsx       # Splits segments: text → Markdown, artifact → ArtifactSandbox
 │   │   ├── InputBar.tsx            # Text input + send button
 │   │   ├── AskCard.tsx             # Structured question tabs (<ask_user> JSON parsing)
-│   │   └── StreamingIndicator.tsx  # Typing animation shown while SSE stream is open
+│   │   └── StreamingIndicator.tsx  # Animated robot face SVG while waiting for first chunk
 │   ├── sidebar/
 │   │   ├── ConversationList.tsx    # Full history list
 │   │   └── ConversationItem.tsx    # Single history entry with title + timestamp
@@ -90,7 +90,7 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   │   └── index.ts                # PostgreSQL adapter (Neon serverless)
 │   ├── store/
 │   │   ├── conversation.ts         # Zustand: message list, conversation history (dual storage)
-│   │   ├── model.ts                # Zustand: active model ID, per-model settings (localStorage)
+│   │   ├── model.ts                # Zustand: active model ID (persisted); settings from .env each session
 │   │   ├── storage.ts              # IndexedDB storage adapter for Zustand persist
 │   │   └── server-storage.ts       # Server-side storage adapter (PostgreSQL via API)
 │   └── utils/
@@ -243,7 +243,7 @@ can preserve component instances across streaming re-renders.
   sniffs body content to determine react/html/svg
 - **`flush(hard)`**: `hard=false` preserves tagBuf/bodyBuf during streaming;
   `hard=true` dumps everything as text (used for truncated / persisted messages)
-- `placeholder` segment emitted during body state — animated indicator shown in UI
+- `placeholder` segment emitted during body state — content-based progress detection (`detectPhase`) shown in UI
 - `placeholderIndex` tracking enables replacing the placeholder with the artifact
   segment when `</artifact>` arrives
 
@@ -390,6 +390,16 @@ show a placeholder while code is being generated, then the iframe appears once
   stages.** setTimeout delay must match CSS transition duration exactly;
   they drift apart under heavy load. `transitionend` fires when the browser
   actually finishes the transition, regardless of timing.
+
+### SVG `<style>` + `@keyframes` Are Global
+
+- **SVG `<defs>` IDs are scoped per `<svg>` element — safe to reuse names.**
+- **SVG `<style>` blocks and `@keyframes` are NOT scoped** — they are injected
+  into the global CSSOM. Multiple components using the same class or keyframe
+  names will silently override each other.
+- **Fix:** use unique prefixes per component (e.g. `si-` for StreamingIndicator,
+  `sb-` for Sidebar). Verify both components can render simultaneously without
+  animation interference.
 
 ### Model Output Quality (DeepSeek-specific)
 

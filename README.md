@@ -14,7 +14,7 @@
 - **结构化输入** — `<ask_user>` 选项卡式问题卡片，引导用户逐步提供信息
 - **双主题** — 暖白画布浅色 + 午夜深色，偏好持久化到 localStorage
 - **对话历史** — IndexedDB 持久化，侧边栏导航，自动裁剪（50 会话 / 200 消息）
-- **按模型设置** — Temperature、Max tokens、System prompt 每个供应商独立配置
+- **按模型设置** — Temperature、Max tokens、System prompt 每个供应商独立配置（会话内调试，重启读取 .env 默认值）
 - **复制 / 编辑 / 重试** — 用户消息气泡上的操作按钮
 - **调试模式** — `NEXT_PUBLIC_DEBUG` 开关，统一日志 + 实时调试面板
 
