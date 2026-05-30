@@ -12,6 +12,96 @@ import { ArtifactToolbar } from "@/components/artifact/ArtifactToolbar";
 
 // --- Independent module-level component (not defined inside MessageBubble) ---
 
+function detectPhase(code: string, artifactType?: string): string {
+  const len = code.length;
+  if (len === 0) return "正在分析需求…";
+
+  if (artifactType === "svg") {
+    if (!code.includes("</svg>")) return "正在绘制图形…";
+    return "即将完成…";
+  }
+
+  if (artifactType === "html") {
+    if (!code.includes("<style") && !code.includes("<script") && len < 1200)
+      return "正在构建页面结构…";
+    if (code.includes("<style") && !code.includes("</style>"))
+      return "正在编写样式…";
+    if (code.includes("<script") && !code.includes("</script>"))
+      return "正在编写脚本…";
+    if (code.includes("</style>") && !code.includes("<script"))
+      return "正在构建脚本…";
+    if (code.includes("</script>"))
+      return "即将完成…";
+  }
+
+  // react (default)
+  if (artifactType !== "html" && artifactType !== "svg") {
+    if (code.includes("import ") && !code.includes("export default"))
+      return "正在导入依赖…";
+    if (
+      (code.includes("return (") || code.includes("return(")) &&
+      code.length > 500
+    )
+      return "正在构建视图…";
+    if (
+      (code.includes("const ") && code.match(/const\s+\w+/g)?.length === 1) ||
+      (code.includes("function ") && !code.includes("return"))
+    )
+      return "正在编写组件骨架…";
+    if (code.includes("export default") && code.length < 800)
+      return "正在编写组件逻辑…";
+  }
+
+  // Length-based fallback
+  if (len < 1000) return "正在编写代码…";
+  if (len < 4000) return "代码生成中…";
+  if (len < 12000) return "即将完成…";
+  return "正在收尾…";
+}
+
+function PlaceholderBar({
+  title,
+  preview,
+  artifactType,
+}: {
+  title: string;
+  preview?: string;
+  artifactType?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasPreview = preview && preview.trim().length > 0;
+  const status = detectPhase(preview ?? "", artifactType);
+
+  return (
+    <div className="my-3 rounded-lg border border-hairline bg-canvas-card px-4 py-3 dark:border-[#2E2C2A] dark:bg-[#1E1C1A]">
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-body dark:text-on-dark-soft">
+          {status}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
+        </span>
+        <span className="text-xs text-muted-soft">生成「{title}」</span>
+        {hasPreview && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="ml-auto text-xs text-muted underline underline-offset-2 hover:text-body"
+          >
+            {expanded ? "收起代码" : "点击查看"}
+          </button>
+        )}
+      </div>
+      {hasPreview && expanded && (
+        <pre className="mt-3 max-h-60 overflow-y-auto rounded-lg bg-code-block p-3 text-xs text-ink dark:text-on-dark-soft">
+          <code>{preview}</code>
+        </pre>
+      )}
+    </div>
+  );
+}
+
 interface SegmentRendererProps {
   seg: Segment;
   onSendPrompt?: (text: string) => void;
@@ -19,7 +109,6 @@ interface SegmentRendererProps {
 
 function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
   const [refreshKey, setRefreshKey] = useState(0);
-  const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
 
   const handleRefresh = useCallback(() => {
@@ -37,33 +126,12 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
   }
 
   if (seg.type === "placeholder") {
-    const hasPreview = seg.preview && seg.preview.trim().length > 0;
     return (
-      <div className="my-3 rounded-lg border border-hairline bg-canvas-card px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-body">
-            正在生成「{seg.title}」
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
-          </span>
-          {hasPreview && (
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              className="ml-auto text-xs text-muted underline underline-offset-2 hover:text-body"
-            >
-              {expanded ? "收起代码" : "点击查看"}
-            </button>
-          )}
-        </div>
-        {hasPreview && expanded && (
-          <pre className="mt-3 max-h-60 overflow-y-auto rounded-lg bg-code-block p-3 text-xs text-ink dark:text-on-dark-soft">
-            <code>{seg.preview}</code>
-          </pre>
-        )}
-      </div>
+      <PlaceholderBar
+        title={seg.title}
+        preview={seg.preview}
+        artifactType={seg.artifactType}
+      />
     );
   }
 

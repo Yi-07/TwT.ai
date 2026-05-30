@@ -68,7 +68,7 @@ export function InputBar({ onSend, onStop, isStreaming, disabled }: InputBarProp
         {isStreaming ? (
           <button
             onClick={onStop}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-dark text-on-dark transition-colors hover:bg-red-600 hover:text-white dark:bg-on-dark dark:text-surface-dark dark:hover:bg-red-500 dark:hover:text-white"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-hairline bg-[#EBE8E0] text-body transition-colors hover:bg-red-600 hover:text-white dark:border-[#3A3733] dark:bg-[#262422] dark:text-on-dark dark:hover:bg-red-500 dark:hover:text-white"
             aria-label="Stop generating"
           >
             <svg

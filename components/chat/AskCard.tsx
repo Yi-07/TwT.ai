@@ -204,7 +204,7 @@ export function AskCard({ questions, onSelect, onDismiss }: AskCardProps) {
                 <span
                   className={`inline-flex h-6 w-6 md:h-[24px] md:w-[24px] shrink-0 items-center justify-center rounded-md text-xs font-medium transition-colors ${
                     isSelected
-                      ? "bg-ink text-canvas dark:bg-on-dark dark:text-surface-dark"
+                      ? "bg-primary text-white"
                       : "bg-canvas-soft text-body dark:bg-surface-dark dark:text-on-dark"
                   }`}
                 >

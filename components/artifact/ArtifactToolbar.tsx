@@ -75,7 +75,7 @@ export function ArtifactToolbar({
         visible ? "opacity-100" : ""
       }`}
     >
-      <span className="min-w-0 flex-1 truncate text-xs text-muted dark:text-on-dark-soft">
+      <span className="min-w-0 flex-1 truncate text-xs text-[#4A4540] dark:text-[#C8C4BC]">
         {title}
       </span>
 
@@ -83,16 +83,16 @@ export function ArtifactToolbar({
         {copied ? (
           <Check size={14} className="text-accent-teal" />
         ) : (
-          <Copy size={14} className="text-muted-soft dark:text-on-dark-soft" />
+          <Copy size={14} className="text-[#6B6560] dark:text-[#BEB9B0]" />
         )}
       </button>
 
       <button onClick={handleDownload} className={btnClass} aria-label="Download source">
-        <Download size={14} className="text-muted-soft dark:text-on-dark-soft" />
+        <Download size={14} className="text-[#6B6560] dark:text-[#BEB9B0]" />
       </button>
 
       <button onClick={onRefresh} className={btnClass} aria-label="Refresh artifact">
-        <RefreshCw size={14} className="text-muted-soft dark:text-on-dark-soft" />
+        <RefreshCw size={14} className="text-[#6B6560] dark:text-[#BEB9B0]" />
       </button>
     </div>
   );
