@@ -262,6 +262,41 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
         }`}
       >
         <div className="flex h-12 items-center gap-2 border-b border-hairline px-4 dark:border-hairline" style={{ minWidth: 256 }}>
+          <svg width="28" height="28" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" className="shrink-0" aria-hidden="true">
+            <defs>
+              <radialGradient id="sb-bg" cx="38%" cy="32%" r="68%">
+                <stop offset="0%" stopColor="#253555" />
+                <stop offset="100%" stopColor="#1a2540" />
+              </radialGradient>
+              <linearGradient id="sb-eye" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%"><animate attributeName="stop-color" values="#A09BE8;#D4C8FF;#A09BE8" dur="2.2s" repeatCount="indefinite"/></stop>
+                <stop offset="100%"><animate attributeName="stop-color" values="#D4C8FF;#A09BE8;#D4C8FF" dur="2.2s" repeatCount="indefinite"/></stop>
+              </linearGradient>
+              <linearGradient id="sb-mouth" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%"><animate attributeName="stop-color" values="#67E8C9;#B8F5E8;#67E8C9" dur="2.2s" repeatCount="indefinite"/></stop>
+                <stop offset="100%"><animate attributeName="stop-color" values="#B8F5E8;#67E8C9;#B8F5E8" dur="2.2s" repeatCount="indefinite"/></stop>
+              </linearGradient>
+            </defs>
+            <style>{`
+              .sb-float { animation: sb-float 2.4s ease-in-out infinite; transform-origin: 64px 64px; }
+              @keyframes sb-float { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.04); } }
+              .sb-eye { transform-box: fill-box; transform-origin: center; animation: sb-blink 3s ease-in-out infinite; }
+              @keyframes sb-blink { 0%,38%,62%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.07); } }
+              .sb-brow { transform-box: fill-box; transform-origin: center; animation: sb-brow-lift 3s ease-in-out infinite; }
+              @keyframes sb-brow-lift { 0%,38%,62%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+            `}</style>
+            <rect width="128" height="128" rx="28" fill="url(#sb-bg)" />
+            <rect x="0" y="0" width="128" height="56" rx="28" fill="white" opacity="0.05" />
+            <g className="sb-float">
+              <rect className="sb-brow" x="24" y="22" width="30" height="6" rx="3" fill="url(#sb-eye)" />
+              <rect className="sb-eye" x="33" y="34" width="7" height="24" rx="3.5" fill="url(#sb-eye)" />
+              <rect className="sb-brow" x="74" y="22" width="30" height="6" rx="3" fill="url(#sb-eye)" />
+              <rect className="sb-eye" x="88" y="34" width="7" height="24" rx="3.5" fill="url(#sb-eye)" />
+              <path d="M36 84 Q45 98 64 88 Q83 98 92 84" fill="none" stroke="url(#sb-mouth)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M36 84 Q33 79 36 75" fill="none" stroke="url(#sb-mouth)" strokeWidth="6.5" strokeLinecap="round" />
+              <path d="M92 84 Q95 79 92 75" fill="none" stroke="url(#sb-mouth)" strokeWidth="6.5" strokeLinecap="round" />
+            </g>
+          </svg>
           <span className="text-sm font-semibold tracking-tight text-ink dark:text-on-dark">TwT.ai</span>
         </div>
         <div style={{ minWidth: 256 }}>
