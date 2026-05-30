@@ -32,16 +32,43 @@ export function createServerStorage(): StateStorage {
 
   return {
     async getItem(name: string) {
-      const res = await fetch(`/api/conversations?key=${name}`, { headers });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return JSON.stringify(data);
+      // Retry once on transient failures (e.g. Vercel cold start + Neon wake-up).
+      // Without this, a single failed getItem causes Zustand to rehydrate as
+      // empty, and the very next setItem overwrites existing DB data.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch(`/api/conversations?key=${name}`, { headers });
+          if (!res.ok) {
+            if (attempt === 0) continue;
+            return null;
+          }
+          const data = await res.json();
+          if (!data || (typeof data === "object" && Object.keys(data).length === 0)) {
+            return null;
+          }
+          return JSON.stringify(data);
+        } catch {
+          if (attempt === 0) continue;
+          return null;
+        }
+      }
+      return null;
     },
     async setItem(name: string, value: string) {
+      const parsed = JSON.parse(value) as { conversations?: unknown[]; activeId?: string | null };
+      // Never persist empty state — guards against overwriting existing data
+      // when getItem failed and the store rehydrated with the initial state.
+      if (
+        Array.isArray(parsed.conversations) &&
+        parsed.conversations.length === 0 &&
+        !parsed.activeId
+      ) {
+        return;
+      }
       latestSetItem = fetch("/api/conversations", {
         method: "POST",
         headers,
-        body: JSON.stringify({ key: name, value: JSON.parse(value) }),
+        body: JSON.stringify({ key: name, value: parsed }),
       })
         .then(() => {})
         .catch(() => {});
