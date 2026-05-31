@@ -51,8 +51,8 @@ function AssistantAvatar() {
 
         {/* Light bg: muted mint */}
         <linearGradient id="mb-bg-light" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#E8DDD0" />
-          <stop offset="100%" stopColor="#DFD2C4" />
+          <stop offset="0%" stopColor="#EADCD0" />
+          <stop offset="100%" stopColor="#E0CDBA" />
         </linearGradient>
 
         {/* Dark bg: cool blue-grey */}
