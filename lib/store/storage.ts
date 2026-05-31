@@ -17,6 +17,8 @@ function createIdbStorage(storeName: string): StateStorage {
   let pending: Promise<void> | null = null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let db: any = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let idbMod: any = null;
 
   async function ensureDb() {
     if (ready) return;
@@ -25,11 +27,15 @@ function createIdbStorage(storeName: string): StateStorage {
       return;
     }
     pending = (async () => {
-      const mod = await import("idb-keyval");
-      db = mod.createStore(`twt-${storeName}`, "keyval");
+      idbMod = await import("idb-keyval");
+      db = idbMod.createStore(`twt-${storeName}`, "keyval");
       ready = true;
       pending = null;
-    })();
+    })().catch((err) => {
+      console.error("Failed to initialize IDB storage:", err);
+      pending = null; // allow retry on next call
+      throw err;
+    });
     await pending;
   }
 
@@ -37,8 +43,7 @@ function createIdbStorage(storeName: string): StateStorage {
     async getItem(name: string) {
       try {
         await ensureDb();
-        const { get } = await import("idb-keyval");
-        const value = await get(name, db);
+        const value = await idbMod.get(name, db);
         return value ?? null;
       } catch {
         return null;
@@ -47,8 +52,7 @@ function createIdbStorage(storeName: string): StateStorage {
     async setItem(name: string, value: string) {
       try {
         await ensureDb();
-        const { set } = await import("idb-keyval");
-        await set(name, value, db);
+        await idbMod.set(name, value, db);
       } catch {
         // silently ignore write errors
       }
@@ -56,8 +60,7 @@ function createIdbStorage(storeName: string): StateStorage {
     async removeItem(name: string) {
       try {
         await ensureDb();
-        const { del } = await import("idb-keyval");
-        await del(name, db);
+        await idbMod.del(name, db);
       } catch {
         // silently ignore
       }
@@ -68,18 +71,3 @@ function createIdbStorage(storeName: string): StateStorage {
 export function createConversationStorage(): StateStorage {
   return createIdbStorage("conversations");
 }
-
-export const modelStorage: StateStorage =
-  typeof window === "undefined"
-    ? noopStorage()
-    : {
-        getItem(name: string) {
-          return localStorage.getItem(name);
-        },
-        setItem(name: string, value: string) {
-          localStorage.setItem(name, value);
-        },
-        removeItem(name: string) {
-          localStorage.removeItem(name);
-        },
-      };

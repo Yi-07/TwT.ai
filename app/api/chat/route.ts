@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
   const reader = rawStream.getReader();
   const decoder = debug ? new TextDecoder() : null;
-  let logContent = "";
+  const logChunks: string[] = [];
 
   const passThrough = new ReadableStream({
     async pull(controller) {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         if (done) {
         if (debug) {
           const filePath = join(process.cwd(), "modelresponse.log");
-          const entry = header + logContent + "\n";
+          const entry = header + logChunks.join("") + "\n";
           readFile(filePath, "utf-8")
             .then((old) => {
               const lines = old.split(divider + "\n");
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         controller.close();
         return;
         }
-        if (debug && decoder) logContent += decoder.decode(value, { stream: true });
+        if (debug && decoder) logChunks.push(decoder.decode(value, { stream: true }));
         controller.enqueue(value);
       } catch (err) {
         console.error("│  error   %s", (err as Error).message);

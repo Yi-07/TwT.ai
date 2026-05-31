@@ -29,7 +29,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
 
   const abortRef = useRef<AbortController | null>(null);
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingRef = useRef("");
+  const pendingRef = useRef<string[]>([]);
   const rafRef = useRef(0);
   const sendIdRef = useRef(0);
 
@@ -42,9 +42,10 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
   }, []);
 
   const flushPending = useCallback(() => {
-    if (pendingRef.current) {
-      const flushed = pendingRef.current;
-      pendingRef.current = "";
+    const chunks = pendingRef.current;
+    if (chunks.length) {
+      const flushed = chunks.join("");
+      pendingRef.current = [];
       setRawContent((prev) => prev + flushed);
     }
     rafRef.current = 0;
@@ -65,7 +66,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
 
       const sid = ++sendIdRef.current;
       setRawContent("");
-      pendingRef.current = "";
+      pendingRef.current = [];
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = 0;
@@ -132,7 +133,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
                     clearSlowTimer();
                     logger.info("useStream first chunk received");
                   }
-                  pendingRef.current += delta;
+                  pendingRef.current.push(delta);
                   if (!rafRef.current) {
                     rafRef.current = requestAnimationFrame(() => flushPending());
                   }
@@ -160,7 +161,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
                   firstChunk = false;
                   clearSlowTimer();
                 }
-                pendingRef.current += delta;
+                pendingRef.current.push(delta);
               }
             } catch { /* skip */ }
           }
