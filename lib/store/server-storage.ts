@@ -13,9 +13,19 @@ const headers = {
 /** Tracks the most recent setItem call so callers can await persistence. */
 let latestSetItem: Promise<void> | null = null;
 
-/** Resolves when the latest queued setItem has completed. */
+// Throttle: Neon free tier caps at ~10 concurrent connections. During
+// streaming, Zustand persist fires setItem on every token update (50+/s),
+// which exhausts the connection pool → ECONNRESET.
+// We allow one immediate write, then coalesce subsequent calls into a
+// trailing timer at 1 Hz until the stream quiets down.
+let lastWriteTime = 0;
+let trailingTimer: ReturnType<typeof setTimeout> | null = null;
+let trailingPromise: Promise<void> | null = null;
+const THROTTLE_MS = 1000;
+
+/** Resolves when the latest queued setItem (immediate or trailing) has completed. */
 export function waitForPersistence(): Promise<void> {
-  return latestSetItem ?? Promise.resolve();
+  return trailingPromise ?? latestSetItem ?? Promise.resolve();
 }
 
 export function createServerStorage(): StateStorage {
@@ -70,15 +80,38 @@ export function createServerStorage(): StateStorage {
       ) {
         return;
       }
-      const myPromise = fetch("/api/conversations", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ key: name, value: parsed }),
-      })
-        .then(() => {})
-        .catch(() => {});
-      latestSetItem = myPromise;
-      await myPromise;
+
+      const doWrite = async (v: typeof parsed) => {
+        const p = fetch("/api/conversations", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ key: name, value: v }),
+        })
+          .then(() => {})
+          .catch(() => {});
+        latestSetItem = p;
+        await p;
+      };
+
+      const now = Date.now();
+      if (now - lastWriteTime >= THROTTLE_MS) {
+        // Enough time since last write — persist immediately
+        lastWriteTime = now;
+        await doWrite(parsed);
+      } else {
+        // Streaming — coalesce into a trailing timer
+        if (trailingTimer) clearTimeout(trailingTimer);
+        trailingPromise = new Promise<void>((resolve) => {
+          trailingTimer = setTimeout(async () => {
+            lastWriteTime = Date.now();
+            await doWrite(parsed);
+            trailingTimer = null;
+            trailingPromise = null;
+            resolve();
+          }, THROTTLE_MS);
+        });
+        // Don't await — let caller continue; trailing timer will persist
+      }
     },
     async removeItem(name: string) {
       await fetch(`/api/conversations?key=${name}`, {

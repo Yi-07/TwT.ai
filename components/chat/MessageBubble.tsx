@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy, Pencil, RefreshCw } from "lucide-react";
@@ -349,15 +349,14 @@ export function MessageBubble({
     setTimeout(() => setCopied(false), 1500);
   }, [message.content]);
 
-  // Per-message parser persisted via ref — the parser's internal delta
-  // tracking (this.processed) skips re-scanning content that was already
-  // parsed on previous renders during streaming.
-  const parserRef = useRef(new ArtifactParser());
+  // Per-message parser instance — the parser is recreated on every
+  // render so its internal delta tracking (this.processed) stays in
+  // sync with the stripped content passed to it.
   const segments = useMemo(() => {
     const content = message.content
       .replace(/<ask_user>[\s\S]*?<\/ask_user>/g, "")
       .replace(/<ask_user>[\s\S]*$/, "");
-    const parser = parserRef.current;
+    const parser = new ArtifactParser();
     parser.parse(content);
     return parser.flush(!streaming);
   }, [message.content, streaming]);
