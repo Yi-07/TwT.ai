@@ -51,53 +51,53 @@ function AssistantAvatar() {
 
         {/* Light bg: muted mint */}
         <linearGradient id="mb-bg-light" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#C8DDD0" />
-          <stop offset="100%" stopColor="#D8E8DC" />
+          <stop offset="0%" stopColor="#E8DDD0" />
+          <stop offset="100%" stopColor="#DFD2C4" />
         </linearGradient>
 
         {/* Dark bg: cool blue-grey */}
         <linearGradient id="mb-bg-dark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#5D7FA0" />
-          <stop offset="100%" stopColor="#7898B8" />
+          <stop offset="0%" stopColor="#141B32" />
+          <stop offset="100%" stopColor="#1E2848" />
         </linearGradient>
 
         {/* Light eyes: deep green shimmer */}
         <linearGradient id="mb-eye-light" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%">
-            <animate attributeName="stop-color" values="#5A8A6A;#7AAA88;#5A8A6A" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="stop-color" values="#8B5E3C;#A07850;#8B5E3C" dur="2.4s" repeatCount="indefinite"/>
           </stop>
           <stop offset="100%">
-            <animate attributeName="stop-color" values="#7AAA88;#5A8A6A;#7AAA88" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="stop-color" values="#A07850;#8B5E3C;#A07850" dur="2.4s" repeatCount="indefinite"/>
           </stop>
         </linearGradient>
 
         {/* Dark eyes: cool white-blue shimmer */}
         <linearGradient id="mb-eye-dark" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%">
-            <animate attributeName="stop-color" values="#D8E8F8;#ECF4FF;#D8E8F8" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="stop-color" values="#60C5F8;#90DFFF;#60C5F8" dur="2.4s" repeatCount="indefinite"/>
           </stop>
           <stop offset="100%">
-            <animate attributeName="stop-color" values="#ECF4FF;#D8E8F8;#ECF4FF" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="stop-color" values="#90DFFF;#60C5F8;#90DFFF" dur="2.4s" repeatCount="indefinite"/>
           </stop>
         </linearGradient>
 
         {/* Light mouth: grey-mint shimmer */}
         <linearGradient id="mb-mouth-light" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%">
-            <animate attributeName="stop-color" values="#8BAAA0;#AABFB8;#8BAAA0" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="stop-color" values="#9E8A7A;#B8A595;#9E8A7A" dur="2.4s" repeatCount="indefinite"/>
           </stop>
           <stop offset="100%">
-            <animate attributeName="stop-color" values="#AABFB8;#8BAAA0;#AABFB8" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="stop-color" values="#B8A595;#9E8A7A;#B8A595" dur="2.4s" repeatCount="indefinite"/>
           </stop>
         </linearGradient>
 
         {/* Dark mouth: mint shimmer */}
         <linearGradient id="mb-mouth-dark" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%">
-            <animate attributeName="stop-color" values="#7AC4B0;#9ADAC8;#7AC4B0" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="stop-color" values="#6EE7D8;#A0F5E8;#6EE7D8" dur="2.4s" repeatCount="indefinite"/>
           </stop>
           <stop offset="100%">
-            <animate attributeName="stop-color" values="#9ADAC8;#7AC4B0;#9ADAC8" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="stop-color" values="#A0F5E8;#6EE7D8;#A0F5E8" dur="2.4s" repeatCount="indefinite"/>
           </stop>
         </linearGradient>
       </defs>
@@ -138,7 +138,7 @@ function AssistantAvatar() {
         <rect width="128" height="128" fill="url(#mb-bg-dark)" className="hidden dark:block" />
 
         {/* Top highlight */}
-        <rect width="128" height="58" fill="white" className="opacity-[0.22] dark:opacity-[0.08]" />
+        <rect width="128" height="58" fill="white" className="opacity-[0.20] dark:opacity-[0.06]" />
 
         <g className="mb-float">
           <rect className="mb-brow" x="24" y="22" width="30" height="6" rx="3" fill={`url(#${eyeId})`} />
