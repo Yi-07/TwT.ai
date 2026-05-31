@@ -30,16 +30,25 @@ export function MessageList({
     const container = containerRef.current;
     if (!container) return;
 
-    // Only auto-scroll if the user is already near the bottom.
-    // If they've scrolled up to read history, don't interrupt.
-    const threshold = 80;
-    const isNearBottom =
-      container.scrollTop + container.clientHeight >=
-      container.scrollHeight - threshold;
-    if (isNearBottom || messages.length === 0) {
-      container.scrollTop = container.scrollHeight;
+    const scrollToBottom = () => {
+      const threshold = 80;
+      const isNearBottom =
+        container.scrollTop + container.clientHeight >=
+        container.scrollHeight - threshold;
+      if (isNearBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
+    };
+
+    scrollToBottom();
+
+    // During streaming, poll periodically to catch async height changes
+    // (artifact iframe resize via postMessage, Markdown re-layout, etc.)
+    if (streaming) {
+      const interval = setInterval(scrollToBottom, 120);
+      return () => clearInterval(interval);
     }
-  }, [messages]);
+  }, [messages, streaming]);
 
   // Scroll to bottom on first mount regardless
   useEffect(() => {
