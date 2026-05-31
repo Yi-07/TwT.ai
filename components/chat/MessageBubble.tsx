@@ -150,6 +150,16 @@ function AssistantAvatar() {
           <path d="M92 84 Q95 79 92 75" fill="none" stroke={`url(#${mouthId})`} strokeWidth="7" strokeLinecap="round" />
         </g>
       </g>
+
+      {/* Rim light — dark mode only */}
+      <circle
+        cx="64" cy="64" r="63"
+        fill="none"
+        stroke="white"
+        strokeWidth="1.5"
+        opacity="0.07"
+        className="hidden dark:block"
+      />
     </svg>
   );
 }
