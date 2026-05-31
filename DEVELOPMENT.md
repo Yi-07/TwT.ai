@@ -1029,6 +1029,57 @@ content when emitting placeholders.
 
 ---
 
+## Phase 30 — Async/Timing Audit & Rendering Smoothness
+
+**Commits:** a1587b7 → c74c5b6 (3 commits)
+
+Three parallel agents audited the entire codebase for async timing issues,
+covering the streaming pipeline, store persistence layer, and UI rendering
+(19 files). 37 issues found and fixed across HIGH / MEDIUM / LOW tiers.
+
+### HIGH tier (5 issues)
+- **useStream retry corruption**: old `.finally()` would clear new stream's
+  `isStreaming`, `slowTimer`, and `abortRef` after retry. Fixed with `sendIdRef`
+  counter — finally block bails out if the ID doesn't match.
+- **useStream data loss at stream end**: TextDecoder internal buffer and SSE
+  line accumulator (`buffer` variable) were never drained after the while loop.
+  Fixed by calling `decoder.decode()` (flush) and processing remaining lines.
+- **conversation hydration guard**: `createConversation` now checks
+  `_hasHydrated` before executing, preventing store mutations during rehydration
+  from being overwritten by persisted data.
+- **ThemeToggle transitionend leak**: rapid double-toggle left stale
+  `transitionend` callbacks that corrupted the SVG morph state. Fixed with
+  `animIdRef` counter — each animation stage checks the ID before executing.
+- **globals.css `*` transition rule**: `*, *::before, *::after` applied
+  `transition-property` to every DOM node, causing measurable style-recalc
+  overhead during streaming. Replaced with attribute selectors targeting
+  only elements with Tailwind colour classes (`[class*="bg-"]`, etc.).
+
+### MEDIUM tier (10 issues)
+- `handleRetry` now clears error toast before retry (`setToast(null)`)
+- `route.ts` passthrough `ReadableStream` gained `cancel()` handler to
+  propagate client disconnects upstream (saves wasted API tokens)
+- `route.ts` `pull()` wrapped in try/catch for error visibility
+- `ArtifactSandbox.srcdoc` memoized via `useMemo([artifactType, content])`
+- Artifact resize `postMessage` debounced via `requestAnimationFrame`
+- `MessageBubble` parser stored in `useRef` — delta tracking (`this.processed`)
+  now actually works, avoiding O(n) re-scan on every token during streaming
+- `MessageList` empty state now requires `_hasHydrated` to prevent flash
+- `server-storage` `setItem` stores its promise locally before assigning to
+  `latestSetItem`, preventing concurrent-caller await confusion
+- `server-storage` `setItem` wraps `JSON.parse` in try/catch
+- `ChatView.handleSend` streaming guard
+
+### LOW tier (6 issues)
+- `useStream.pendingRef` changed from `string` (+= concat, O(n^2)) to `string[]`
+  (push + join)
+- `route.ts` debug `logContent` changed from string concat to array join
+- `storage.ts` `idb-keyval` imported once into a shared variable instead of
+  per-method dynamic imports; `ensureDb` resets `pending` on failure for retry
+- Dead `modelStorage` export removed from `storage.ts`
+
+---
+
 ## Model-Specific Issues
 
 | Model | Artifact tag quality | Code generation quality | Recommendation |

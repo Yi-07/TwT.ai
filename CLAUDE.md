@@ -62,7 +62,6 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   │   ├── MessageBubble.tsx       # Splits segments: text → Markdown, artifact → ArtifactSandbox
 │   │   ├── InputBar.tsx            # Text input + send button
 │   │   ├── AskCard.tsx             # Structured question tabs (<ask_user> JSON parsing)
-│   │   └── StreamingIndicator.tsx  # Animated robot face SVG while waiting for first chunk
 │   ├── sidebar/
 │   │   ├── ConversationList.tsx    # Full history list
 │   │   └── ConversationItem.tsx    # Single history entry with title + timestamp
@@ -397,9 +396,28 @@ show a placeholder while code is being generated, then the iframe appears once
 - **SVG `<style>` blocks and `@keyframes` are NOT scoped** — they are injected
   into the global CSSOM. Multiple components using the same class or keyframe
   names will silently override each other.
-- **Fix:** use unique prefixes per component (e.g. `si-` for StreamingIndicator,
+- **Fix:** use unique prefixes per component (e.g. `mb-` for MessageBubble avatar,
   `sb-` for Sidebar). Verify both components can render simultaneously without
   animation interference.
+
+### Global `*` Transition Rule Can Degrade Rendering Performance
+
+- Applying `transition-property` to every DOM node via `*, *::before, *::after`
+  forces the browser to track transition start/end for hundreds of elements.
+- During streaming, new nodes are created continuously, each inheriting the rule.
+  On lower-end devices this causes visible jank.
+- **Fix:** scope the transition to elements that actually carry colour classes
+  (`[class*="bg-"], [class*="text-"], [class*="border-"]`, etc.).
+
+### TextDecoder Internal Buffer Must Be Flushed at Stream End
+
+- `TextDecoder.decode(value, { stream: true })` holds incomplete multi-byte
+  sequences across calls. If the stream ends without a final `decode()` call
+  (no arguments), trailing bytes of CJK/emoji characters are silently dropped.
+- The SSE line accumulator (`buffer` variable) may also hold an unprocessed
+  partial line at stream end.
+- **Fix:** after the read loop, call `decoder.decode()` (flush) and process
+  any remaining lines in `buffer`.
 
 ### Model Output Quality (DeepSeek-specific)
 

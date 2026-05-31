@@ -20,6 +20,8 @@ Multi-model AI chat frontend inspired by claude.ai. Switch between Claude, DeepS
 
 ## Quick Start
 
+**Prerequisites:** Node.js >= 20, pnpm >= 9
+
 ```bash
 # Clone
 git clone https://github.com/Yi-07/TwT.ai.git

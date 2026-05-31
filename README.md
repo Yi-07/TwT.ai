@@ -20,6 +20,8 @@
 
 ## 快速开始
 
+**环境依赖：** Node.js >= 20，pnpm >= 9
+
 ```bash
 # 克隆
 git clone https://github.com/Yi-07/TwT.ai.git
