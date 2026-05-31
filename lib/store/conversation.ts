@@ -36,6 +36,7 @@ export const useConversationStore = create<ConversationState>()(
       activeId: null,
 
       createConversation: (modelId: string) => {
+        if (!get()._hasHydrated) return "";
         const id = nextId();
         const now = Date.now();
         const conversation: Conversation = {

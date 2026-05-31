@@ -52,7 +52,7 @@ function applyFrame(svg: SVGSVGElement, frame: "sun" | "moon") {
   }
 }
 
-function animateToMoon(svg: SVGSVGElement) {
+function animateToMoon(svg: SVGSVGElement, animId: number) {
   const raysG = svg.querySelector("#rays") as SVGGElement;
   const body = svg.querySelector("#body") as SVGCircleElement;
   const maskCirc = svg.querySelector("#mask-circle") as SVGCircleElement;
@@ -63,9 +63,11 @@ function animateToMoon(svg: SVGSVGElement) {
   raysG.style.opacity = "0";
   raysG.style.transform = "rotate(-45deg)";
 
-  raysG.addEventListener("transitionend", function onRaysDone(e) {
+  const onRaysDone = (e: TransitionEvent) => {
     if (e.propertyName !== "opacity") return;
     raysG.removeEventListener("transitionend", onRaysDone);
+    if (animIdRef && !animIdRef.current) return; // stale guard — see caller
+    if (!isCurrentAnim(animId)) return;
 
     // Stage 2: body swells, switches to filled
     body.style.transition = "r 0.4s cubic-bezier(0.4,0,0.2,1)";
@@ -75,18 +77,21 @@ function animateToMoon(svg: SVGSVGElement) {
     body.setAttribute("stroke-width", "0");
     body.setAttribute("mask", "url(#crescent-mask)");
 
-    body.addEventListener("transitionend", function onBodyDone(e) {
-      if (e.propertyName !== "r") return;
+    const onBodyDone = (e2: TransitionEvent) => {
+      if (e2.propertyName !== "r") return;
       body.removeEventListener("transitionend", onBodyDone);
+      if (!isCurrentAnim(animId)) return;
 
       // Stage 3: mask circle expands, bites out crescent
       maskCirc.style.transition = "r 0.35s ease-out";
       maskCirc.setAttribute("r", "8");
-    });
-  });
+    };
+    body.addEventListener("transitionend", onBodyDone);
+  };
+  raysG.addEventListener("transitionend", onRaysDone);
 }
 
-function animateToSun(svg: SVGSVGElement) {
+function animateToSun(svg: SVGSVGElement, animId: number) {
   const raysG = svg.querySelector("#rays") as SVGGElement;
   const body = svg.querySelector("#body") as SVGCircleElement;
   const maskCirc = svg.querySelector("#mask-circle") as SVGCircleElement;
@@ -95,9 +100,10 @@ function animateToSun(svg: SVGSVGElement) {
   maskCirc.style.transition = "r 0.3s ease-in";
   maskCirc.setAttribute("r", "0");
 
-  maskCirc.addEventListener("transitionend", function onMaskDone(e) {
+  const onMaskDone = (e: TransitionEvent) => {
     if (e.propertyName !== "r") return;
     maskCirc.removeEventListener("transitionend", onMaskDone);
+    if (!isCurrentAnim(animId)) return;
 
     // Stage 2: body shrinks, switches to stroke
     body.style.transition = "r 0.4s cubic-bezier(0.4,0,0.2,1)";
@@ -107,9 +113,10 @@ function animateToSun(svg: SVGSVGElement) {
     body.setAttribute("stroke-width", "2");
     body.removeAttribute("mask");
 
-    body.addEventListener("transitionend", function onBodyDone(e) {
-      if (e.propertyName !== "r") return;
+    const onBodyDone = (e2: TransitionEvent) => {
+      if (e2.propertyName !== "r") return;
       body.removeEventListener("transitionend", onBodyDone);
+      if (!isCurrentAnim(animId)) return;
 
       // Stage 3: rays expand + rotate cw back
       positionRays(raysG, 10, 15, 0);
@@ -117,8 +124,16 @@ function animateToSun(svg: SVGSVGElement) {
         "opacity 0.35s ease-in-out, transform 0.55s ease-in-out";
       raysG.style.opacity = "1";
       raysG.style.transform = "rotate(0deg)";
-    });
-  });
+    };
+    body.addEventListener("transitionend", onBodyDone);
+  };
+  maskCirc.addEventListener("transitionend", onMaskDone);
+}
+
+// Module-level ref shared across animation cycles — reset on each new cycle.
+let animIdRef: { current: number } | null = null;
+function isCurrentAnim(id: number) {
+  return animIdRef?.current === id;
 }
 
 export function ThemeToggle() {
@@ -153,11 +168,15 @@ export function ThemeToggle() {
       return;
     }
 
-    // Subsequent: play animation
+    // Increment animation ID so any in-flight transitionend callbacks
+    // from a previous toggle will bail out when they fire.
+    animIdRef = { current: (animIdRef?.current ?? 0) + 1 };
+    const id = animIdRef.current;
+
     if (isDark) {
-      animateToMoon(svg);
+      animateToMoon(svg, id);
     } else {
-      animateToSun(svg);
+      animateToSun(svg, id);
     }
   }, [isDark, mounted]);
 

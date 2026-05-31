@@ -31,6 +31,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingRef = useRef("");
   const rafRef = useRef(0);
+  const sendIdRef = useRef(0);
 
   const clearSlowTimer = useCallback(() => {
     if (slowTimerRef.current) {
@@ -62,6 +63,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
     (messages: Message[], conversationId?: string) => {
       logger.debug("useStream send", { msgCount: messages.length, cid: conversationId });
 
+      const sid = ++sendIdRef.current;
       setRawContent("");
       pendingRef.current = "";
       if (rafRef.current) {
@@ -141,7 +143,27 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
             }
           }
 
-          // Flush any remaining pending content
+          // Flush TextDecoder internal buffer and any remaining SSE line
+          buffer += decoder.decode();
+          const remaining = buffer.split("\n");
+          for (const line of remaining) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
+            const data = trimmed.slice(6);
+            if (data === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) {
+                logger.debug("useStream delta (final)", delta.slice(0, 50));
+                if (firstChunk) {
+                  firstChunk = false;
+                  clearSlowTimer();
+                }
+                pendingRef.current += delta;
+              }
+            } catch { /* skip */ }
+          }
           flushPending();
         })
         .catch((err) => {
@@ -153,6 +175,9 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
           }
         })
         .finally(() => {
+          // Guard: if a new send() was called before this finally fires
+          // (retry / edit-submit), skip cleanup to avoid corrupting the new stream.
+          if (sendIdRef.current !== sid) return;
           logger.info("useStream ended");
           clearSlowTimer();
           flushPending();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy, Pencil, RefreshCw } from "lucide-react";
@@ -13,28 +13,6 @@ import { ArtifactToolbar } from "@/components/artifact/ArtifactToolbar";
 // --- Independent module-level component (not defined inside MessageBubble) ---
 
 function AssistantAvatar() {
-  const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.dataset.theme === "dark",
-  );
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDark(
-        document.documentElement.dataset.theme === "dark",
-      );
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  const eyeId = isDark ? "mb-eye-dark" : "mb-eye-light";
-  const mouthId = isDark ? "mb-mouth-dark" : "mb-mouth-light";
-
   return (
     <svg
       width="28"
@@ -49,19 +27,19 @@ function AssistantAvatar() {
           <circle cx="64" cy="64" r="64" />
         </clipPath>
 
-        {/* Light bg: muted mint */}
+        {/* Light bg: warm terracotta-ivory */}
         <linearGradient id="mb-bg-light" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#EADCD0" />
-          <stop offset="100%" stopColor="#E0CDBA" />
+          <stop offset="0%" stopColor="#DEBFA5" />
+          <stop offset="100%" stopColor="#E8D8C8" />
         </linearGradient>
 
-        {/* Dark bg: cool blue-grey */}
+        {/* Dark bg: deep space blue */}
         <linearGradient id="mb-bg-dark" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#141B32" />
           <stop offset="100%" stopColor="#1E2848" />
         </linearGradient>
 
-        {/* Light eyes: deep green shimmer */}
+        {/* Light eyes: deep clay shimmer */}
         <linearGradient id="mb-eye-light" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%">
             <animate attributeName="stop-color" values="#8B5E3C;#A07850;#8B5E3C" dur="2.4s" repeatCount="indefinite"/>
@@ -71,7 +49,7 @@ function AssistantAvatar() {
           </stop>
         </linearGradient>
 
-        {/* Dark eyes: cool white-blue shimmer */}
+        {/* Dark eyes: electric blue shimmer */}
         <linearGradient id="mb-eye-dark" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%">
             <animate attributeName="stop-color" values="#60C5F8;#90DFFF;#60C5F8" dur="2.4s" repeatCount="indefinite"/>
@@ -81,7 +59,7 @@ function AssistantAvatar() {
           </stop>
         </linearGradient>
 
-        {/* Light mouth: grey-mint shimmer */}
+        {/* Light mouth: warm taupe shimmer */}
         <linearGradient id="mb-mouth-light" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%">
             <animate attributeName="stop-color" values="#9E8A7A;#B8A595;#9E8A7A" dur="2.4s" repeatCount="indefinite"/>
@@ -91,7 +69,7 @@ function AssistantAvatar() {
           </stop>
         </linearGradient>
 
-        {/* Dark mouth: mint shimmer */}
+        {/* Dark mouth: cool mint shimmer */}
         <linearGradient id="mb-mouth-dark" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%">
             <animate attributeName="stop-color" values="#6EE7D8;#A0F5E8;#6EE7D8" dur="2.4s" repeatCount="indefinite"/>
@@ -132,33 +110,44 @@ function AssistantAvatar() {
       `}</style>
 
       <g clipPath="url(#mb-clip)">
-        {/* Light bg (hidden in dark) */}
-        <rect width="128" height="128" fill="url(#mb-bg-light)" className="dark:hidden" />
-        {/* Dark bg (hidden in light) */}
-        <rect width="128" height="128" fill="url(#mb-bg-dark)" className="hidden dark:block" />
+        {/* Bg — crossfade via opacity transition */}
+        <rect width="128" height="128" fill="url(#mb-bg-light)" style={{ transition: 'opacity var(--theme-transition-duration) var(--theme-transition-easing)' }} className="dark:opacity-0" />
+        <rect width="128" height="128" fill="url(#mb-bg-dark)" style={{ transition: 'opacity var(--theme-transition-duration) var(--theme-transition-easing)' }} className="opacity-0 dark:opacity-100" />
 
-        {/* Top highlight */}
-        <rect width="128" height="58" fill="white" className="opacity-[0.20] dark:opacity-[0.06]" />
+        {/* Highlight — crossfade */}
+        <rect width="128" height="58" fill="white" style={{ transition: 'opacity var(--theme-transition-duration) var(--theme-transition-easing)' }} className="opacity-[0.20] dark:opacity-0" />
+        <rect width="128" height="58" fill="white" style={{ transition: 'opacity var(--theme-transition-duration) var(--theme-transition-easing)' }} className="opacity-0 dark:opacity-[0.06]" />
 
-        <g className="mb-float">
-          <rect className="mb-brow" x="24" y="22" width="30" height="6" rx="3" fill={`url(#${eyeId})`} />
-          <rect className="mb-eye"  x="33" y="34" width="7"  height="24" rx="3.5" fill={`url(#${eyeId})`} />
-          <rect className="mb-brow" x="74" y="22" width="30" height="6" rx="3" fill={`url(#${eyeId})`} />
-          <rect className="mb-eye"  x="88" y="34" width="7"  height="24" rx="3.5" fill={`url(#${eyeId})`} />
-          <path d="M36 84 Q45 98 64 88 Q83 98 92 84" fill="none" stroke={`url(#${mouthId})`} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M36 84 Q33 79 36 75" fill="none" stroke={`url(#${mouthId})`} strokeWidth="7" strokeLinecap="round" />
-          <path d="M92 84 Q95 79 92 75" fill="none" stroke={`url(#${mouthId})`} strokeWidth="7" strokeLinecap="round" />
+        {/* Light face — fades out in dark */}
+        <g className="mb-float dark:opacity-0" style={{ transition: 'opacity var(--theme-transition-duration) var(--theme-transition-easing)' }}>
+          <rect className="mb-brow" x="24" y="22" width="30" height="6" rx="3" fill="url(#mb-eye-light)" />
+          <rect className="mb-eye"  x="33" y="34" width="7"  height="24" rx="3.5" fill="url(#mb-eye-light)" />
+          <rect className="mb-brow" x="74" y="22" width="30" height="6" rx="3" fill="url(#mb-eye-light)" />
+          <rect className="mb-eye"  x="88" y="34" width="7"  height="24" rx="3.5" fill="url(#mb-eye-light)" />
+          <path d="M36 84 Q45 98 64 88 Q83 98 92 84" fill="none" stroke="url(#mb-mouth-light)" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M36 84 Q33 79 36 75" fill="none" stroke="url(#mb-mouth-light)" strokeWidth="7" strokeLinecap="round" />
+          <path d="M92 84 Q95 79 92 75" fill="none" stroke="url(#mb-mouth-light)" strokeWidth="7" strokeLinecap="round" />
+        </g>
+
+        {/* Dark face — fades in in dark */}
+        <g className="mb-float opacity-0 dark:opacity-100" style={{ transition: 'opacity var(--theme-transition-duration) var(--theme-transition-easing)' }}>
+          <rect className="mb-brow" x="24" y="22" width="30" height="6" rx="3" fill="url(#mb-eye-dark)" />
+          <rect className="mb-eye"  x="33" y="34" width="7"  height="24" rx="3.5" fill="url(#mb-eye-dark)" />
+          <rect className="mb-brow" x="74" y="22" width="30" height="6" rx="3" fill="url(#mb-eye-dark)" />
+          <rect className="mb-eye"  x="88" y="34" width="7"  height="24" rx="3.5" fill="url(#mb-eye-dark)" />
+          <path d="M36 84 Q45 98 64 88 Q83 98 92 84" fill="none" stroke="url(#mb-mouth-dark)" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M36 84 Q33 79 36 75" fill="none" stroke="url(#mb-mouth-dark)" strokeWidth="7" strokeLinecap="round" />
+          <path d="M92 84 Q95 79 92 75" fill="none" stroke="url(#mb-mouth-dark)" strokeWidth="7" strokeLinecap="round" />
         </g>
       </g>
 
-      {/* Rim light — dark mode only */}
+      {/* Rim light — dark only, with transition */}
       <circle
         cx="64" cy="64" r="63"
         fill="none"
         stroke="white"
         strokeWidth="1.5"
-        opacity="0.07"
-        className="hidden dark:block"
+        style={{ transition: 'opacity var(--theme-transition-duration) var(--theme-transition-easing)' }} className="opacity-0 dark:opacity-[0.07]"
       />
     </svg>
   );
