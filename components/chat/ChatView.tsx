@@ -166,6 +166,7 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
 
   const handleRetry = useCallback(() => {
     abort();
+    setToast(null);
     setAskDismissed(false);
     const cId = activeId;
     if (cId) removeLastAssistantMessage(cId);

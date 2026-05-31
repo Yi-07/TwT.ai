@@ -55,7 +55,12 @@ export function createServerStorage(): StateStorage {
       return null;
     },
     async setItem(name: string, value: string) {
-      const parsed = JSON.parse(value) as { conversations?: unknown[]; activeId?: string | null };
+      let parsed: { conversations?: unknown[]; activeId?: string | null };
+      try {
+        parsed = JSON.parse(value);
+      } catch {
+        return; // silently skip corrupted data
+      }
       // Never persist empty state — guards against overwriting existing data
       // when getItem failed and the store rehydrated with the initial state.
       if (
@@ -65,14 +70,15 @@ export function createServerStorage(): StateStorage {
       ) {
         return;
       }
-      latestSetItem = fetch("/api/conversations", {
+      const myPromise = fetch("/api/conversations", {
         method: "POST",
         headers,
         body: JSON.stringify({ key: name, value: parsed }),
       })
         .then(() => {})
         .catch(() => {});
-      await latestSetItem;
+      latestSetItem = myPromise;
+      await myPromise;
     },
     async removeItem(name: string) {
       await fetch(`/api/conversations?key=${name}`, {

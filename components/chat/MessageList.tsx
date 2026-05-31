@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Message } from "@/types/conversation";
+import { useConversationStore } from "@/lib/store/conversation";
 import { MessageBubble } from "./MessageBubble";
 
 interface MessageListProps {
@@ -55,7 +56,9 @@ export function MessageList({
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, []);
 
-  if (messages.length === 0 && !streaming) {
+  const hasHydrated = useConversationStore((s) => s._hasHydrated);
+
+  if (messages.length === 0 && !streaming && hasHydrated) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-soft dark:text-on-dark-soft">Start a conversation</p>

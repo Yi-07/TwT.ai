@@ -78,8 +78,9 @@ export async function POST(request: NextRequest) {
 
   const passThrough = new ReadableStream({
     async pull(controller) {
-      const { done, value } = await reader.read();
-      if (done) {
+      try {
+        const { done, value } = await reader.read();
+        if (done) {
         if (debug) {
           const filePath = join(process.cwd(), "modelresponse.log");
           const entry = header + logContent + "\n";
@@ -96,9 +97,17 @@ export async function POST(request: NextRequest) {
         console.log("└────────────────────────────────────");
         controller.close();
         return;
+        }
+        if (debug && decoder) logContent += decoder.decode(value, { stream: true });
+        controller.enqueue(value);
+      } catch (err) {
+        console.error("│  error   %s", (err as Error).message);
+        console.log("└────────────────────────────────────");
+        controller.error(err);
       }
-      if (debug && decoder) logContent += decoder.decode(value, { stream: true });
-      controller.enqueue(value);
+    },
+    cancel() {
+      reader.cancel();
     },
   });
 

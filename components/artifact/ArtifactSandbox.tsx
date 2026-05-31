@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import type { ArtifactType } from "@/types/artifact";
 import { logger } from "@/lib/utils/logger";
 
@@ -193,10 +193,14 @@ export function ArtifactSandbox({
 }: ArtifactSandboxProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [contentHeight, setContentHeight] = useState(300);
+  const resizeRafRef = useRef(0);
 
   const height = contentHeight;
 
-  const srcdoc = buildSrcdoc(artifactType, content);
+  const srcdoc = useMemo(
+    () => buildSrcdoc(artifactType, content),
+    [artifactType, content],
+  );
 
   const handleMessage = useCallback(
     (e: MessageEvent) => {
@@ -208,7 +212,10 @@ export function ArtifactSandbox({
       if (!isSrcdoc && !isSameOrigin && !isCDN) return;
 
       if (e.data?.type === "resize" && typeof e.data.height === "number") {
-        setContentHeight(e.data.height);
+        cancelAnimationFrame(resizeRafRef.current);
+        resizeRafRef.current = requestAnimationFrame(() =>
+          setContentHeight(e.data.height),
+        );
       }
       if (e.data?.type === "sendPrompt" && typeof e.data.text === "string") {
         onSendPrompt?.(e.data.text);
