@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy, Pencil, RefreshCw } from "lucide-react";
@@ -11,6 +11,148 @@ import { ArtifactSandbox } from "@/components/artifact/ArtifactSandbox";
 import { ArtifactToolbar } from "@/components/artifact/ArtifactToolbar";
 
 // --- Independent module-level component (not defined inside MessageBubble) ---
+
+function AssistantAvatar() {
+  const [isDark, setIsDark] = useState(
+    () =>
+      typeof document !== "undefined" &&
+      document.documentElement.dataset.theme === "dark",
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(
+        document.documentElement.dataset.theme === "dark",
+      );
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const eyeId = isDark ? "mb-eye-dark" : "mb-eye-light";
+  const mouthId = isDark ? "mb-mouth-dark" : "mb-mouth-light";
+
+  return (
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 128 128"
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-[28px] h-[28px] shrink-0 mt-[2px]"
+      aria-hidden="true"
+    >
+      <defs>
+        <clipPath id="mb-clip">
+          <circle cx="64" cy="64" r="64" />
+        </clipPath>
+
+        {/* Light bg: muted mint */}
+        <linearGradient id="mb-bg-light" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#C8DDD0" />
+          <stop offset="100%" stopColor="#D8E8DC" />
+        </linearGradient>
+
+        {/* Dark bg: cool blue-grey */}
+        <linearGradient id="mb-bg-dark" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#5D7FA0" />
+          <stop offset="100%" stopColor="#7898B8" />
+        </linearGradient>
+
+        {/* Light eyes: deep green shimmer */}
+        <linearGradient id="mb-eye-light" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%">
+            <animate attributeName="stop-color" values="#5A8A6A;#7AAA88;#5A8A6A" dur="2.4s" repeatCount="indefinite"/>
+          </stop>
+          <stop offset="100%">
+            <animate attributeName="stop-color" values="#7AAA88;#5A8A6A;#7AAA88" dur="2.4s" repeatCount="indefinite"/>
+          </stop>
+        </linearGradient>
+
+        {/* Dark eyes: cool white-blue shimmer */}
+        <linearGradient id="mb-eye-dark" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%">
+            <animate attributeName="stop-color" values="#D8E8F8;#ECF4FF;#D8E8F8" dur="2.4s" repeatCount="indefinite"/>
+          </stop>
+          <stop offset="100%">
+            <animate attributeName="stop-color" values="#ECF4FF;#D8E8F8;#ECF4FF" dur="2.4s" repeatCount="indefinite"/>
+          </stop>
+        </linearGradient>
+
+        {/* Light mouth: grey-mint shimmer */}
+        <linearGradient id="mb-mouth-light" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%">
+            <animate attributeName="stop-color" values="#8BAAA0;#AABFB8;#8BAAA0" dur="2.4s" repeatCount="indefinite"/>
+          </stop>
+          <stop offset="100%">
+            <animate attributeName="stop-color" values="#AABFB8;#8BAAA0;#AABFB8" dur="2.4s" repeatCount="indefinite"/>
+          </stop>
+        </linearGradient>
+
+        {/* Dark mouth: mint shimmer */}
+        <linearGradient id="mb-mouth-dark" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%">
+            <animate attributeName="stop-color" values="#7AC4B0;#9ADAC8;#7AC4B0" dur="2.4s" repeatCount="indefinite"/>
+          </stop>
+          <stop offset="100%">
+            <animate attributeName="stop-color" values="#9ADAC8;#7AC4B0;#9ADAC8" dur="2.4s" repeatCount="indefinite"/>
+          </stop>
+        </linearGradient>
+      </defs>
+
+      <style>{`
+        .mb-float {
+          animation: mb-face-float 2.4s ease-in-out infinite;
+          transform-origin: 64px 64px;
+        }
+        @keyframes mb-face-float {
+          0%, 100% { transform: translateY(0)    scale(1);    }
+          50%       { transform: translateY(-3px) scale(1.03); }
+        }
+        .mb-eye {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: mb-blink 3s ease-in-out infinite;
+        }
+        @keyframes mb-blink {
+          0%, 38%, 62%, 100% { transform: scaleY(1);    }
+          50%                 { transform: scaleY(0.07); }
+        }
+        .mb-brow {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: mb-brow-lift 3s ease-in-out infinite;
+        }
+        @keyframes mb-brow-lift {
+          0%, 38%, 62%, 100% { transform: translateY(0);   }
+          50%                 { transform: translateY(-3px); }
+        }
+      `}</style>
+
+      <g clipPath="url(#mb-clip)">
+        {/* Light bg (hidden in dark) */}
+        <rect width="128" height="128" fill="url(#mb-bg-light)" className="dark:hidden" />
+        {/* Dark bg (hidden in light) */}
+        <rect width="128" height="128" fill="url(#mb-bg-dark)" className="hidden dark:block" />
+
+        {/* Top highlight */}
+        <rect width="128" height="58" fill="white" className="opacity-[0.22] dark:opacity-[0.08]" />
+
+        <g className="mb-float">
+          <rect className="mb-brow" x="24" y="22" width="30" height="6" rx="3" fill={`url(#${eyeId})`} />
+          <rect className="mb-eye"  x="33" y="34" width="7"  height="24" rx="3.5" fill={`url(#${eyeId})`} />
+          <rect className="mb-brow" x="74" y="22" width="30" height="6" rx="3" fill={`url(#${eyeId})`} />
+          <rect className="mb-eye"  x="88" y="34" width="7"  height="24" rx="3.5" fill={`url(#${eyeId})`} />
+          <path d="M36 84 Q45 98 64 88 Q83 98 92 84" fill="none" stroke={`url(#${mouthId})`} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M36 84 Q33 79 36 75" fill="none" stroke={`url(#${mouthId})`} strokeWidth="7" strokeLinecap="round" />
+          <path d="M92 84 Q95 79 92 75" fill="none" stroke={`url(#${mouthId})`} strokeWidth="7" strokeLinecap="round" />
+        </g>
+      </g>
+    </svg>
+  );
+}
 
 function detectPhase(code: string, artifactType?: string): string {
   const len = code.length;
@@ -284,47 +426,7 @@ export function MessageBubble({
     <div className="flex w-full animate-fade-in justify-start">
       <div className="flex w-full max-w-3xl items-start gap-3 px-4 py-2">
         {/* Avatar — robot face, permanent for every assistant message */}
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 128 128"
-          className="shrink-0 mt-0.5"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="av-eye" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%">
-                <animate attributeName="stop-color" values="#A09BE8;#D4C8FF;#A09BE8" dur="2.2s" repeatCount="indefinite"/>
-              </stop>
-              <stop offset="100%">
-                <animate attributeName="stop-color" values="#D4C8FF;#A09BE8;#D4C8FF" dur="2.2s" repeatCount="indefinite"/>
-              </stop>
-            </linearGradient>
-            <linearGradient id="av-mouth" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%">
-                <animate attributeName="stop-color" values="#67E8C9;#B8F5E8;#67E8C9" dur="2.2s" repeatCount="indefinite"/>
-              </stop>
-              <stop offset="100%">
-                <animate attributeName="stop-color" values="#B8F5E8;#67E8C9;#B8F5E8" dur="2.2s" repeatCount="indefinite"/>
-              </stop>
-            </linearGradient>
-          </defs>
-          <style>{`
-            .av-eye { transform-box: fill-box; transform-origin: center; animation: av-blink 3s ease-in-out infinite; }
-            @keyframes av-blink { 0%,38%,62%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.07); } }
-            .av-brow { transform-box: fill-box; transform-origin: center; animation: av-brow-lift 3s ease-in-out infinite; }
-            @keyframes av-brow-lift { 0%,38%,62%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-          `}</style>
-          <rect width="128" height="128" rx="28" fill="#1a1f2e" />
-          <rect x="0" y="0" width="128" height="56" rx="28" fill="white" opacity="0.05" />
-          <rect className="av-brow" x="24" y="22" width="30" height="6" rx="3" fill="url(#av-eye)" />
-          <rect className="av-eye" x="33" y="34" width="7" height="24" rx="3.5" fill="url(#av-eye)" />
-          <rect className="av-brow" x="74" y="22" width="30" height="6" rx="3" fill="url(#av-eye)" />
-          <rect className="av-eye" x="88" y="34" width="7" height="24" rx="3.5" fill="url(#av-eye)" />
-          <path d="M36 84 Q45 98 64 88 Q83 98 92 84" fill="none" stroke="url(#av-mouth)" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M36 84 Q33 79 36 75" fill="none" stroke="url(#av-mouth)" strokeWidth="6.5" strokeLinecap="round" />
-          <path d="M92 84 Q95 79 92 75" fill="none" stroke="url(#av-mouth)" strokeWidth="6.5" strokeLinecap="round" />
-        </svg>
+        <AssistantAvatar />
 
         {/* Content area */}
         <div className="min-w-0 flex-1">
