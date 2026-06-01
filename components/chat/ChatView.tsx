@@ -171,6 +171,11 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
     const cId = activeId;
     if (cId) removeLastAssistantMessage(cId);
     if (cId) doSend(cId);
+    // Scroll to the new message after the DOM has updated
+    setTimeout(() => {
+      const el = document.querySelector('[class*="overflow-y-auto"]');
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 0);
   }, [activeId, doSend, removeLastAssistantMessage, abort]);
 
   const handleEditSubmit = useCallback(
@@ -193,6 +198,11 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
   const handleSendPrompt = useCallback(
     (text: string) => {
       handleSend(text);
+      // Scroll to the new message after the DOM has updated
+      setTimeout(() => {
+        const el = document.querySelector('[class*="overflow-y-auto"]');
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 0);
     },
     [handleSend],
   );

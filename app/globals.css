@@ -157,6 +157,8 @@
    Asymmetric: light→dark = 1200ms, dark→light = 1800ms. */
 html,
 body,
+pre,
+code,
 [class*="bg-"],
 [class*="text-"],
 [class*="border-"],

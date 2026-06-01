@@ -98,10 +98,7 @@ export class ArtifactParser {
         }
       } else {
         // body
-        // Only match </artifact> at the start of a line — prevents
-        // false closes when the tag appears inside code (strings, comments).
-        const closeTagOff = delta.slice(i).search(/^<\/artifact>/m);
-        const closeTag = closeTagOff === -1 ? -1 : i + closeTagOff;
+        const closeTag = delta.indexOf("</artifact>", i);
         if (closeTag === -1) {
           this.bodyBuf += delta.slice(i);
 

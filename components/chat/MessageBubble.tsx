@@ -214,9 +214,9 @@ function PlaceholderBar({
   const status = detectPhase(preview ?? "", artifactType);
 
   return (
-    <div className="my-3 rounded-lg border border-hairline bg-canvas-card px-4 py-3 dark:border-[#2E2C2A] dark:bg-[#1E1C1A]">
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-body dark:text-on-dark-soft">
+    <div className="my-3 rounded-lg border border-hairline bg-canvas-card px-3 py-2 sm:px-4 sm:py-3 dark:border-[#2E2C2A] dark:bg-[#1E1C1A]">
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <span className="text-xs sm:text-sm text-body dark:text-on-dark-soft">
           {status}
         </span>
         <span className="flex items-center gap-1">
@@ -224,7 +224,7 @@ function PlaceholderBar({
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
         </span>
-        <span className="text-xs text-muted-soft">生成「{title}」</span>
+        <span className="text-[10px] sm:text-xs text-muted-soft">生成「{title}」</span>
         {hasPreview && (
           <button
             onClick={() => setExpanded((v) => !v)}
@@ -260,7 +260,7 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
     return (
       <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-code-block [&_pre]:text-ink dark:[&_pre]:text-on-dark-soft [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-code-block [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_table]:w-full [&_th]:border [&_th]:border-hairline [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-hairline [&_td]:px-3 [&_td]:py-2">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {seg.content.replace(/~/g, "\\~")}
+          {seg.content.replace(/｀/g, "`")}
         </ReactMarkdown>
       </div>
     );
@@ -382,10 +382,22 @@ export function MessageBubble({
                   rows={3}
                   autoFocus
                 />
-                <div className="flex items-center gap-2 text-xs text-muted-soft">
-                  <span>Enter · send</span>
-                  <span>Shift+Enter · newline</span>
-                  <span>Esc · cancel</span>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <button
+                    onClick={handleEditCancel}
+                    className="rounded-lg border border-hairline px-3 py-1.5 text-muted-soft transition-colors hover:text-body dark:border-hairline"
+                  >
+                    Cancel
+                  </button>
+                  <div className="flex items-center gap-1 text-muted-soft">
+                    <span>Shift+Enter · newline</span>
+                  </div>
+                  <button
+                    onClick={handleEditDone}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-white transition-colors hover:bg-primary-active"
+                  >
+                    Send
+                  </button>
                 </div>
               </div>
             ) : (
