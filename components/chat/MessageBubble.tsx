@@ -365,11 +365,11 @@ export function MessageBubble({
     return (
       <div className="flex w-full animate-fade-in justify-end">
         <div className="group flex max-w-[80%] flex-col items-end">
-          <div className="rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-ink dark:text-on-dark">
+          <div data-message-id={message.id} className="rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-ink dark:text-on-dark">
             {editing ? (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 <textarea
-                  className="w-full resize-none rounded-lg bg-canvas px-3 py-2 text-[15px] leading-relaxed text-ink outline-none dark:bg-surface-dark-elevated dark:text-on-dark"
+                  className="w-full resize-none rounded-xl border border-hairline bg-canvas px-4 py-3 text-[15px] leading-relaxed text-ink outline-none focus:border-primary dark:border-hairline dark:bg-[#1E1D1B] dark:text-on-dark dark:focus:border-primary"
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
                   onKeyDown={(e) => {
@@ -382,19 +382,17 @@ export function MessageBubble({
                   rows={3}
                   autoFocus
                 />
-                <div className="flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center justify-between gap-3">
                   <button
                     onClick={handleEditCancel}
-                    className="rounded-lg border border-hairline px-3 py-1.5 text-muted-soft transition-colors hover:text-body dark:border-hairline"
+                    className="rounded-xl bg-[#E8E4DC] px-4 py-2 text-sm text-body transition-colors hover:bg-[#DDD8CE] dark:bg-[#2D2B27] dark:text-on-dark dark:hover:bg-[#3A3733]"
                   >
                     Cancel
                   </button>
-                  <div className="flex items-center gap-1 text-muted-soft">
-                    <span>Shift+Enter · newline</span>
-                  </div>
+                  <span className="text-[11px] text-muted-soft">Shift+Enter · newline</span>
                   <button
                     onClick={handleEditDone}
-                    className="rounded-lg bg-primary px-3 py-1.5 text-white transition-colors hover:bg-primary-active"
+                    className="rounded-xl bg-primary px-4 py-2 text-sm text-white transition-colors hover:bg-primary-active"
                   >
                     Send
                   </button>
@@ -440,7 +438,7 @@ export function MessageBubble({
         <AssistantAvatar />
 
         {/* Content area */}
-        <div className="min-w-0 flex-1">
+        <div data-message-id={message.id} className="min-w-0 flex-1">
           <div className="group">
             {message.content === "" && streaming ? (
               <span className="text-sm text-body dark:text-on-dark-soft">

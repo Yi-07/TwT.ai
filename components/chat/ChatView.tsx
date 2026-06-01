@@ -11,7 +11,8 @@ import { ModelSwitcher } from "@/components/model/ModelSwitcher";
 import { ModelSettings } from "@/components/model/ModelSettings";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { MessageList } from "./MessageList";
-import { InputBar } from "./InputBar";
+import { InputBar, type InputBarHandle } from "./InputBar";
+import { SelectionReply } from "./SelectionReply";
 import { AskCard } from "./AskCard";
 import { DebugPanel } from "@/components/debug/DebugPanel";
 import { parseAskCard } from "@/lib/utils/parseAskCard";
@@ -92,6 +93,8 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
   const assistantMsgIdRef = useRef<string>("");
   const activeConvIdRef = useRef<string>("");
 
+  const inputBarRef = useRef<InputBarHandle>(null);
+
   // Handle "new" conversation: create one and redirect
   useEffect(() => {
     if (conversationId === "new" && !initialized.current) {
@@ -160,6 +163,11 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
       }
 
       doSend(cId);
+      // Scroll to the new message after the DOM has updated
+      setTimeout(() => {
+        const el = document.querySelector('[data-scroll-container]');
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 0);
     },
     [sendMessage, activeId, doSend, router, isStreaming],
   );
@@ -188,6 +196,11 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
         updateUserMessage(cId, msgId, newText);
         removeLastAssistantMessage(cId);
         doSend(cId);
+        // Scroll to the new message after the DOM has updated
+        setTimeout(() => {
+          const el = document.querySelector('[data-scroll-container]');
+          if (el) el.scrollTop = el.scrollHeight;
+        }, 0);
       }
     },
     [activeId, doSend, updateUserMessage, removeLastAssistantMessage, abort],
@@ -398,6 +411,7 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
 
         {/* Input */}
         <InputBar
+          ref={inputBarRef}
           onSend={handleSend}
           onStop={abort}
           isStreaming={isStreaming}
@@ -412,6 +426,9 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
             isSlowResponse={isSlowResponse}
           />
         )}
+
+        {/* Selection reply — floating button near text selection */}
+        <SelectionReply inputRef={inputBarRef} />
       </div>
     </div>
   );
