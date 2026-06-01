@@ -62,7 +62,7 @@ export function InputBar({ onSend, onStop, isStreaming, disabled }: InputBarProp
           placeholder={disabled ? "Loading..." : "Send a message..."}
           rows={1}
           disabled={disabled}
-          className="flex-1 resize-none rounded-2xl border border-hairline bg-transparent px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:text-on-dark dark:placeholder:text-on-dark-soft dark:focus:border-primary transition-[border-color] duration-200"
+          className="flex-1 resize-none rounded-2xl border border-hairline bg-transparent px-4 py-3 text-base leading-relaxed text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:text-on-dark dark:placeholder:text-on-dark-soft dark:focus:border-primary transition-[border-color] duration-200"
         />
 
         {isStreaming ? (
