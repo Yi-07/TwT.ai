@@ -178,6 +178,14 @@ code,
   transition-timing-function: var(--theme-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
+/* Tailwind Typography adds backtick decorations to inline <code> via
+   ::before/::after pseudo-elements. The model already writes backticks
+   in the source, so this creates double backticks in the rendered output. */
+.prose code::before,
+.prose code::after {
+  content: none;
+}
+
 /* AskCard entrance + option stagger */
 @keyframes ask-card-enter {
   from { opacity: 0; transform: translateY(10px); }
