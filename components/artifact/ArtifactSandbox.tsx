@@ -214,7 +214,12 @@ export function ArtifactSandbox({
       if (e.data?.type === "resize" && typeof e.data.height === "number") {
         cancelAnimationFrame(resizeRafRef.current);
         resizeRafRef.current = requestAnimationFrame(() =>
-          setContentHeight(e.data.height),
+          // Clamp height so the iframe layout box never extends past the
+          // messages area into the InputBar — iframes capture hit-tests
+          // on their layout box even when visually clipped by overflow.
+          setContentHeight(
+            Math.min(Math.max(e.data.height, 100), window.innerHeight * 0.6),
+          ),
         );
       }
       if (e.data?.type === "sendPrompt" && typeof e.data.text === "string") {
