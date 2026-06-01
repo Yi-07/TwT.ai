@@ -173,7 +173,7 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
     if (cId) doSend(cId);
     // Scroll to the new message after the DOM has updated
     setTimeout(() => {
-      const el = document.querySelector('[class*="overflow-y-auto"]');
+      const el = document.querySelector('[data-scroll-container]');
       if (el) el.scrollTop = el.scrollHeight;
     }, 0);
   }, [activeId, doSend, removeLastAssistantMessage, abort]);
@@ -200,7 +200,7 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
       handleSend(text);
       // Scroll to the new message after the DOM has updated
       setTimeout(() => {
-        const el = document.querySelector('[class*="overflow-y-auto"]');
+        const el = document.querySelector('[data-scroll-container]');
         if (el) el.scrollTop = el.scrollHeight;
       }, 0);
     },
