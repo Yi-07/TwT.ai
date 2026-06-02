@@ -10,6 +10,7 @@ export function ConversationList() {
     activeId,
     createConversation,
     deleteConversation,
+    updateTitle,
     setActive,
   } = useConversation();
 
@@ -18,7 +19,7 @@ export function ConversationList() {
       <div className="px-3 py-3">
         <button
           onClick={() => createConversation(getDefaultModel())}
-          className="flex w-full items-center gap-2 rounded-lg border border-hairline px-3 py-2.5 text-sm font-medium text-body transition-colors hover:bg-canvas-card dark:border-hairline dark:text-on-dark dark:hover:bg-surface-dark-elevated"
+          className="flex w-full items-center gap-2 rounded-lg border border-hairline px-3 py-2.5 text-sm font-medium text-body hover:bg-canvas-card dark:border-hairline dark:text-on-dark dark:hover:bg-surface-dark-elevated"
         >
           <svg
             width="16"
@@ -50,6 +51,7 @@ export function ConversationList() {
                 isActive={c.id === activeId}
                 onSelect={setActive}
                 onDelete={deleteConversation}
+                onRename={updateTitle}
               />
             ))}
           </div>

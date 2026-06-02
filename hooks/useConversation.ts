@@ -62,6 +62,7 @@ export function useConversation() {
     [updateMessage],
   );
 
+  const updateTitle = useConversationStore((s) => s.updateTitle);
   const removeLastAssistantMessage = useConversationStore(
     (s) => s.removeLastAssistantMessage,
   );
@@ -90,6 +91,7 @@ export function useConversation() {
     createAssistantMessage,
     updateAssistantMessage,
     updateUserMessage,
+    updateTitle,
     removeLastAssistantMessage,
     appendAssistantMessage,
   };
