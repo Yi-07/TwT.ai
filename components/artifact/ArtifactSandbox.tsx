@@ -70,13 +70,13 @@ function buildSrcdoc(type: ArtifactType, code: string): string {
       }
       return code.replace(
         /<\/body>/i,
-        `<style>body{height:auto!important}</style>${SENDPROMPT_SCRIPT}${RESIZE_SCRIPT}</body>`,
+        `<meta name="viewport" content="width=device-width,initial-scale=1"><style>body{height:auto!important;max-width:100%}*{max-width:100%;box-sizing:border-box}</style>${SENDPROMPT_SCRIPT}${RESIZE_SCRIPT}</body>`,
       );
 
     case "svg":
       return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;}</style></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}*{max-width:100%;box-sizing:border-box}</style></head>
 <body>${SENDPROMPT_SCRIPT}${code}${RESIZE_SCRIPT}</body>
 </html>`;
 
@@ -86,6 +86,7 @@ function buildSrcdoc(type: ArtifactType, code: string): string {
 <html>
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 ${SENDPROMPT_SCRIPT}
 <script src="/vendor/react.umd.js"><\/script>
 <script src="/vendor/react-dom.umd.js"><\/script>
@@ -94,9 +95,8 @@ ${SENDPROMPT_SCRIPT}
 <script src="/vendor/recharts.umd.js"><\/script>
 <script src="/vendor/lodash.umd.js"><\/script>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; max-width: 100%; }
   body { font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
-  #root { min-height: 100vh; }
   #err { display:none; padding:16px; color:#dc2626; background:#fef2f2; font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-all; }
 </style>
 <script>
@@ -214,12 +214,7 @@ export function ArtifactSandbox({
       if (e.data?.type === "resize" && typeof e.data.height === "number") {
         cancelAnimationFrame(resizeRafRef.current);
         resizeRafRef.current = requestAnimationFrame(() =>
-          // Clamp height so the iframe layout box never extends past the
-          // messages area into the InputBar — iframes capture hit-tests
-          // on their layout box even when visually clipped by overflow.
-          setContentHeight(
-            Math.min(Math.max(e.data.height, 100), window.innerHeight * 0.6),
-          ),
+          setContentHeight(Math.max(e.data.height, 100)),
         );
       }
       if (e.data?.type === "sendPrompt" && typeof e.data.text === "string") {
