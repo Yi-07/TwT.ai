@@ -17,6 +17,7 @@ import { AskCard } from "./AskCard";
 import { DebugPanel } from "@/components/debug/DebugPanel";
 import { parseAskCard } from "@/lib/utils/parseAskCard";
 import { waitForPersistence } from "@/lib/store/server-storage";
+import { generateTitle } from "@/lib/utils/generateTitle";
 import { X, RefreshCw } from "lucide-react";
 
 interface ChatViewProps {
@@ -122,6 +123,34 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
     if (!msgId || !cId || cId === "new") return;
     updateAssistantMessage(cId, msgId, rawContent);
   }, [rawContent, updateAssistantMessage]);
+
+  // Auto-generate conversation title after the first exchange completes
+  const prevStreamingRef = useRef(isStreaming);
+  const updateTitle = useConversationStore((s) => s.updateTitle);
+  useEffect(() => {
+    const wasStreaming = prevStreamingRef.current;
+    prevStreamingRef.current = isStreaming;
+    if (!wasStreaming || isStreaming) return;
+    const { conversations } = useConversationStore.getState();
+    const conv = conversations.find((c) => c.id === activeId);
+    if (
+      conv &&
+      conv.title === "New conversation" &&
+      conv.messages.length >= 2
+    ) {
+      const firstUserMsg =
+        conv.messages.find((m) => m.role === "user")?.content ?? "";
+      if (firstUserMsg) {
+        generateTitle(activeModelId, firstUserMsg).then((title) => {
+          if (title && title !== "New conversation" && activeId) {
+            updateTitle(activeId, title);
+          } else if (activeId) {
+            updateTitle(activeId, firstUserMsg.slice(0, 30));
+          }
+        });
+      }
+    }
+  }, [isStreaming, activeId, activeModelId, updateTitle]);
 
   const doSend = useCallback(
     (cId: string) => {
@@ -267,15 +296,23 @@ export function ChatView({ conversationId, availableProviders }: ChatViewProps) 
         />
       )}
 
-      {/* Sidebar — inline on wide, overlay on narrow */}
+      {/* Sidebar — inline on wide, overlay on narrow.
+           Inline style for transition so width/transform and colour
+           properties can use different durations without overriding
+           each other. */}
       <aside
+        style={{
+          transition: isNarrow
+            ? "transform 200ms, background-color var(--theme-transition-duration) var(--theme-transition-easing), color var(--theme-transition-duration) var(--theme-transition-easing), border-color var(--theme-transition-duration) var(--theme-transition-easing)"
+            : "width 300ms ease-in-out, background-color var(--theme-transition-duration) var(--theme-transition-easing), color var(--theme-transition-duration) var(--theme-transition-easing), border-color var(--theme-transition-duration) var(--theme-transition-easing)",
+        }}
         className={`border-r border-hairline bg-canvas-soft dark:border-hairline dark:bg-surface-dark-elevated ${
           isNarrow
-            ? `fixed left-0 top-0 z-50 h-full w-64 transition-transform duration-200 ${
+            ? `fixed left-0 top-0 z-50 h-full w-64 ${
                 sidebarOpen ? "translate-x-0" : "-translate-x-full"
               }`
-            : `shrink-0 transition-all duration-200 ${
-                sidebarOpen ? "w-64" : "w-0 overflow-hidden border-r-0"
+            : `shrink-0 overflow-hidden ${
+                sidebarOpen ? "w-64 border-r" : "w-0 border-r-0"
               }`
         }`}
       >

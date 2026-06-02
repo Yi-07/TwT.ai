@@ -155,27 +155,29 @@
    classes instead of the universal * selector, which caused measurable
    style-recalc overhead on every DOM node during streaming.
    Asymmetric: light→dark = 1200ms, dark→light = 1800ms. */
-html,
-body,
-pre,
-code,
-[class*="prose"] *,
-[class*="bg-"],
-[class*="text-"],
-[class*="border-"],
-[class*="from-"],
-[class*="to-"],
-[class*="via-"],
-[class*="shadow-"],
-[class*="ring-"],
-[class*="accent-"],
-[class*="caret-"],
-[class*="fill-"],
-[class*="stroke-"],
-[class*="placeholder-"] {
-  transition-property: background-color, color, border-color;
-  transition-duration: var(--theme-transition-duration, 300ms);
-  transition-timing-function: var(--theme-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+@layer base {
+  html,
+  body,
+  pre,
+  code,
+  [class*="prose"] *,
+  [class*="bg-"],
+  [class*="text-"],
+  [class*="border-"],
+  [class*="from-"],
+  [class*="to-"],
+  [class*="via-"],
+  [class*="shadow-"],
+  [class*="ring-"],
+  [class*="accent-"],
+  [class*="caret-"],
+  [class*="fill-"],
+  [class*="stroke-"],
+  [class*="placeholder-"] {
+    transition-property: background-color, color, border-color;
+    transition-duration: var(--theme-transition-duration, 300ms);
+    transition-timing-function: var(--theme-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  }
 }
 
 /* Tailwind Typography adds backtick decorations to inline <code> via
