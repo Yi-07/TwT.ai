@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy, Pencil, RefreshCw } from "lucide-react";
@@ -326,6 +326,21 @@ export function MessageBubble({
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
 
+  // Tap-to-reveal action buttons on mobile (desktop still uses hover)
+  const [actionsVisible, setActionsVisible] = useState(false);
+
+  const handleTap = useCallback(() => {
+    setActionsVisible((v) => !v);
+  }, []);
+
+  // Hide actions on outside touch
+  useEffect(() => {
+    if (!actionsVisible) return;
+    const hide = () => setActionsVisible(false);
+    document.addEventListener("touchstart", hide, { passive: true });
+    return () => document.removeEventListener("touchstart", hide);
+  }, [actionsVisible]);
+
   const handleEditStart = () => {
     setEditText(message.content);
     setEditing(true);
@@ -344,7 +359,19 @@ export function MessageBubble({
   };
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(message.content).catch(() => {});
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(message.content).catch(() => {});
+    } else {
+      // Fallback for non-HTTPS or old browsers
+      const ta = document.createElement("textarea");
+      ta.value = message.content;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [message.content]);
@@ -364,7 +391,10 @@ export function MessageBubble({
   if (isUser) {
     return (
       <div className="flex w-full animate-fade-in justify-end">
-        <div className="group flex max-w-[80%] flex-col items-end">
+        <div
+          className="group flex max-w-[80%] flex-col items-end"
+          onClick={handleTap}
+        >
           <div data-message-id={message.id} className="rounded-2xl rounded-br-md bg-user-bubble px-5 py-3 text-ink dark:text-on-dark">
             {editing ? (
               <div className="flex flex-col gap-3">
@@ -406,7 +436,7 @@ export function MessageBubble({
           </div>
           {/* Hover icons — Copy / Edit / Retry */}
           {!editing && (
-            <div className="mt-1 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <div className={`mt-1 flex items-center gap-1.5 transition-opacity ${actionsVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
               <button onClick={handleCopy} className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft" aria-label="Copy">
                 {copied ? (
                   <span className="text-[10px] font-medium">✓</span>
@@ -434,11 +464,17 @@ export function MessageBubble({
   return (
     <div className="flex w-full animate-fade-in justify-start">
       <div className="flex w-full max-w-3xl items-start gap-3 px-4 py-2">
-        {/* Avatar — robot face, permanent for every assistant message */}
-        <AssistantAvatar />
+        {/* Avatar — hidden on mobile to save horizontal space */}
+        <div className="hidden sm:block">
+          <AssistantAvatar />
+        </div>
 
         {/* Content area */}
-        <div data-message-id={message.id} className="min-w-0 flex-1">
+        <div
+          data-message-id={message.id}
+          className="min-w-0 flex-1"
+          onClick={handleTap}
+        >
           <div className="group">
             {message.content === "" && streaming ? (
               <span className="text-sm text-body dark:text-on-dark-soft">
@@ -459,7 +495,7 @@ export function MessageBubble({
             )}
             {/* Hover Copy for assistant messages — only after streaming completes */}
             {!streaming && (
-              <div className="mt-1.5 flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100">
+              <div className={`mt-1.5 flex items-center justify-end transition-opacity ${actionsVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
                 <button
                   onClick={handleCopy}
                   className="flex h-6 w-6 items-center justify-center rounded text-body/60 transition-colors hover:text-body hover:bg-canvas-soft"

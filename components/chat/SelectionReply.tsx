@@ -32,9 +32,8 @@ export function SelectionReply({ inputRef }: SelectionReplyProps) {
   }, []);
 
   useEffect(() => {
-    const handleMouseUp = () => {
-      // requestAnimationFrame is more reliable than setTimeout(0) —
-      // the browser has always committed the selection by the next frame.
+    // Shared detection logic — fires on both mouseup and touchend.
+    const detect = () => {
       requestAnimationFrame(() => {
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed || !sel.rangeCount) {
@@ -49,8 +48,6 @@ export function SelectionReply({ inputRef }: SelectionReplyProps) {
         }
 
         // Ensure the selection is within a single message bubble.
-        // commonAncestorContainer may be a text node — walk up to its
-        // parent element before calling closest().
         const range = sel.getRangeAt(0);
         const ancestor = range.commonAncestorContainer;
         const ancestorEl =
@@ -61,7 +58,6 @@ export function SelectionReply({ inputRef }: SelectionReplyProps) {
           return;
         }
 
-        // Both anchor AND focus must be inside the same message bubble.
         const startIn = msgEl.contains(range.startContainer);
         const endIn = msgEl.contains(range.endContainer);
         if (!startIn || !endIn) {
@@ -70,7 +66,6 @@ export function SelectionReply({ inputRef }: SelectionReplyProps) {
         }
 
         const rect = range.getBoundingClientRect();
-        // Prefer top-right of selection, fallback to bottom-right
         let top = rect.top - GAP - BTN_HEIGHT;
         let left = rect.right - BTN_WIDTH;
         if (top < GAP) top = rect.bottom + GAP;
@@ -85,7 +80,27 @@ export function SelectionReply({ inputRef }: SelectionReplyProps) {
       });
     };
 
-    const handleMouseDown = (e: MouseEvent) => {
+    // On mobile, touchend fires first (shows button), then ~300ms later
+    // the browser fires synthetic mousedown at the touch point.  Set a
+    // flag so handleMouseDown skips the synthetic event.
+    let touchFlag = false;
+
+    const onUp = () => {
+      touchFlag = true;
+      setTimeout(() => {
+        touchFlag = false;
+      }, 500);
+      detect();
+    };
+
+    const onSelectionChange = () => {
+      // Keep the button position and text in sync while the user drags
+      // selection handles on mobile (after the initial long-press).
+      if (visibleRef.current) detect();
+    };
+
+    const onDown = (e: Event) => {
+      if (touchFlag) return; // skip synthetic mousedown after touch
       if (visibleRef.current) {
         const btn = document.getElementById("selection-reply-btn");
         if (btn && !btn.contains(e.target as Node)) {
@@ -94,17 +109,21 @@ export function SelectionReply({ inputRef }: SelectionReplyProps) {
       }
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") hide();
     };
 
-    document.addEventListener("mouseup", handleMouseUp);
-    document.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchend", onUp);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("selectionchange", onSelectionChange);
     return () => {
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.removeEventListener("mousedown", handleMouseDown);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("touchend", onUp);
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("selectionchange", onSelectionChange);
     };
   }, [hide]);
 
