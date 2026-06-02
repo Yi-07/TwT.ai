@@ -7,6 +7,10 @@ import { createServerStorage } from "./server-storage";
 const MAX_CONVERSATIONS = 50;
 const MAX_MESSAGES = 200;
 
+// Block persist writes until rehydration completes in the current tab,
+// preventing the initial empty state from overwriting data in other tabs.
+let storageBlocked = true;
+
 const nextId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 interface ConversationState {
@@ -146,17 +150,26 @@ export const useConversationStore = create<ConversationState>()(
     }),
     {
       name: "twt-conversations",
-      storage: createJSONStorage(() =>
-        process.env.NEXT_PUBLIC_STORAGE_MODE === "server"
-          ? createServerStorage()
-          : createConversationStorage(),
-      ),
+      storage: createJSONStorage(() => {
+        const inner =
+          process.env.NEXT_PUBLIC_STORAGE_MODE === "server"
+            ? createServerStorage()
+            : createConversationStorage();
+        return {
+          getItem: (name: string) => inner.getItem(name),
+          setItem: (name: string, value: string) =>
+            storageBlocked ? undefined : inner.setItem(name, value),
+          removeItem: (name: string) =>
+            storageBlocked ? undefined : inner.removeItem(name),
+        };
+      }),
       partialize: (state) => ({
         conversations: state.conversations,
         activeId: state.activeId,
       }),
       onRehydrateStorage: (state) => () => {
         state.setHasHydrated(true);
+        storageBlocked = false;
       },
     },
   ),
