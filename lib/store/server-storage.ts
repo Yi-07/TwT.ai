@@ -22,6 +22,9 @@ let lastWriteTime = 0;
 let trailingTimer: ReturnType<typeof setTimeout> | null = null;
 let trailingPromise: Promise<void> | null = null;
 const THROTTLE_MS = 1000;
+// Always holds the most recent parsed state so the trailing timer
+// writes the latest value, not a stale closure snapshot.
+let latestParsed: { conversations?: unknown[]; activeId?: string | null } | null = null;
 
 /** Resolves when the latest queued setItem (immediate or trailing) has completed. */
 export function waitForPersistence(): Promise<void> {
@@ -65,12 +68,9 @@ export function createServerStorage(): StateStorage {
       return null;
     },
     async setItem(name: string, value: string) {
-      let parsed: { conversations?: unknown[]; activeId?: string | null };
-      try {
-        parsed = JSON.parse(value);
-      } catch {
-        return; // silently skip corrupted data
-      }
+      const parsed: { conversations?: unknown[]; activeId?: string | null } =
+        JSON.parse(value);
+      latestParsed = parsed;
       // Never persist empty state — guards against overwriting existing data
       // when getItem failed and the store rehydrated with the initial state.
       if (
@@ -81,7 +81,8 @@ export function createServerStorage(): StateStorage {
         return;
       }
 
-      const doWrite = async (v: typeof parsed) => {
+      const doWrite = async (v: NonNullable<typeof latestParsed>) => {
+        if (!v) return;
         const p = fetch("/api/conversations", {
           method: "POST",
           headers,
@@ -97,14 +98,17 @@ export function createServerStorage(): StateStorage {
       if (now - lastWriteTime >= THROTTLE_MS) {
         // Enough time since last write — persist immediately
         lastWriteTime = now;
-        await doWrite(parsed);
+        if (latestParsed) await doWrite(latestParsed);
       } else {
-        // Streaming — coalesce into a trailing timer
+        // Streaming — coalesce into a trailing timer.
+        // Use latestParsed (module-level) instead of the closure-captured
+        // parsed snapshot so the trailing write reflects the current state,
+        // not the state from when the timer was scheduled.
         if (trailingTimer) clearTimeout(trailingTimer);
         trailingPromise = new Promise<void>((resolve) => {
           trailingTimer = setTimeout(async () => {
             lastWriteTime = Date.now();
-            await doWrite(parsed);
+            if (latestParsed) await doWrite(latestParsed);
             trailingTimer = null;
             trailingPromise = null;
             resolve();

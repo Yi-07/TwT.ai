@@ -52,7 +52,15 @@ function createIdbStorage(storeName: string): StateStorage {
     async setItem(name: string, value: string) {
       try {
         await ensureDb();
-        await idbMod.set(name, value, db);
+        // Web Locks API — cross-tab mutual exclusion so only one tab
+        // writes at a time, preventing stale-snapshot overwrite.
+        if (typeof navigator !== "undefined" && navigator.locks) {
+          await navigator.locks.request("twt-conversations", async () => {
+            await idbMod.set(name, value, db);
+          });
+        } else {
+          await idbMod.set(name, value, db);
+        }
       } catch {
         // silently ignore write errors
       }
