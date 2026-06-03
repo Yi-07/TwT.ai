@@ -27,29 +27,42 @@ export function MessageList({
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const scrollToBottom = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    const threshold = 80;
+    const isNearBottom =
+      container.scrollTop + container.clientHeight >=
+      container.scrollHeight - threshold;
+    if (isNearBottom) {
+      container.scrollTop = container.scrollHeight;
+    }
+  };
+
+  // Immediate scroll on each content update
   useEffect(() => {
+    scrollToBottom();
+  });
+
+  // Polling + ResizeObserver — catch async layout (code blocks, tables, iframes).
+  // Decoupled from [messages] so the interval isn't reset every ~16ms.
+  useEffect(() => {
+    if (!streaming) return;
     const container = containerRef.current;
     if (!container) return;
 
-    const scrollToBottom = () => {
-      const threshold = 80;
-      const isNearBottom =
-        container.scrollTop + container.clientHeight >=
-        container.scrollHeight - threshold;
-      if (isNearBottom) {
-        container.scrollTop = container.scrollHeight;
-      }
+    // ResizeObserver on the inner wrapper catches height changes from
+    // Markdown/code-block layout that happen after React commit.
+    const wrapper = container.firstElementChild;
+    const ro = new ResizeObserver(() => scrollToBottom());
+    if (wrapper) ro.observe(wrapper);
+
+    const interval = setInterval(scrollToBottom, 120);
+    return () => {
+      clearInterval(interval);
+      ro.disconnect();
     };
-
-    scrollToBottom();
-
-    // During streaming, poll periodically to catch async height changes
-    // (artifact iframe resize via postMessage, Markdown re-layout, etc.)
-    if (streaming) {
-      const interval = setInterval(scrollToBottom, 120);
-      return () => clearInterval(interval);
-    }
-  }, [messages, streaming]);
+  }, [streaming]);
 
   // Scroll to bottom on first mount regardless
   useEffect(() => {
