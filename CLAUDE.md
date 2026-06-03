@@ -238,8 +238,9 @@ can preserve component instances across streaming re-renders.
 - Per-message `useMemo` creates fresh parser, parses full `message.content`
 - **Lenient matching**: type/title accept single/double/no quotes, any attribute order
 - **Missing `>` fallback**: detects code keywords after tag to auto-close
-- **Missing `type` fallback**: if `type` value is malformed (DeepSeek writes Chinese),
-  sniffs body content to determine react/html/svg
+- **Missing `type` fallback**: if `type` value is non-standard (e.g. Chinese
+  characters instead of a recognised type), sniffs body content to determine
+  react/html/svg
 - **`flush(hard)`**: `hard=false` preserves tagBuf/bodyBuf during streaming;
   `hard=true` dumps everything as text (used for truncated / persisted messages)
 - `placeholder` segment emitted during body state — content-based progress detection (`detectPhase`) shown in UI
@@ -345,10 +346,11 @@ show a placeholder while code is being generated, then the iframe appears once
   so incomplete tags aren't corrupted. `flush(true)` dumps everything,
   converting truncated body content into a markdown code block.
 
-- **Lenient attribute matching is required for DeepSeek.** The parser
-  accepts `type="react"`, `type='react'`, and `type=react` (unquoted).
-  If `type` is missing or malformed, the body is sniffed for type
-  (`<svg` → svg, `<!DOCTYPE`/`<html` → html, default → react).
+- **Lenient attribute matching.** The parser accepts `type="react"`,
+  `type='react'`, and `type=react` (unquoted).  If `type` is missing or
+  malformed, the body is sniffed for type (`<svg` → svg,
+  `<!DOCTYPE`/`<html` → html, default → react).  This is defensive
+  design — model output formatting can vary across providers.
 
 ### Streaming Pipeline
 
@@ -368,6 +370,53 @@ show a placeholder while code is being generated, then the iframe appears once
   can overlap the InputBar by a few pixels at the bottom. Without a
   stacking context, clicks in that zone go to the message area instead
   of the textarea.
+
+### GPU Compositor Layers & Iframes
+
+- **CSS `z-index` alone cannot prevent an iframe from intercepting clicks.**
+  iframes are separate browsing contexts rendered in their own compositor
+  surfaces. The browser's hit-testing tree walks GPU layers independently
+  of CSS stacking order — an iframe in a GPU layer can "steal" clicks from
+  a higher `z-index` element that has no GPU layer of its own.
+
+- **`animation-fill-mode: forwards` on a parent that ends with `transform`
+  permanently promotes that element (and all descendants, including iframes)
+  to a GPU compositor layer.**  In our case, `animate-fade-in` applies
+  `transform: translateY(0)` via `forwards` fill on the MessageBubble
+  wrapper that contains the artifact iframe.  The iframe thus renders in
+  a GPU surface that intercepts mouse events before the CPU-rendered
+  InputBar (with `z-10`) ever sees them.
+
+- **Fix: `[transform:translateZ(0)]` on the InputBar wrapper.**
+  `translateZ(0)` is a visual no-op — it moves nothing, scales nothing.
+  Its sole purpose is to force the element into its own GPU compositor
+  layer so the layer-tree ordering respects `z-index` again.  This is a
+  one-class, zero-side-effect fix.
+
+- **Dead-end approaches tried and why they failed:**
+  - Clamping iframe height via `getBoundingClientRect` — made artifacts
+    too short in the lower half of the viewport.
+  - `contain: paint` on the scroll container — does not clip iframe
+    hit-testing (containment applies to paint, not event routing).
+  - Prop-drilling `maxHeight` through ChatView → MessageList →
+    MessageBubble → ArtifactSandbox — extra wrapper divs broke the
+    flex layout chain.
+  - `bg-canvas` on InputBar — cosmetic only, does not affect hit-testing.
+
+### Tailwind Typography Backtick Pseudo-Elements
+
+- **`prose` class adds `::before` / `::after` pseudo-elements with backtick
+  `content` to `<code>` elements.**  When the model's output already
+  contains backticks around inline code, this creates **double backticks**
+  in the rendered output (the model's `` ` `` + the CSS-injected `` ` ``).
+
+- **Fix: `.prose code::before, .prose code::after { content: none; }`** in
+  `app/globals.css`.  This disables the pseudo-element backticks globally;
+  the model's own backticks handle the visual demarcation.
+
+- **Do NOT** add character-level normalization (`replace(/[｀ˋ]/g, "`")`) —
+  the problem is CSS pseudo-elements, not Unicode character variants.
+  The normalization regex is unnecessary and adds per-render CPU cost.
 
 ### SVG DOM Manipulation with React
 
@@ -419,18 +468,117 @@ show a placeholder while code is being generated, then the iframe appears once
 - **Fix:** after the read loop, call `decoder.decode()` (flush) and process
   any remaining lines in `buffer`.
 
-### Model Output Quality (DeepSeek-specific)
+### Parser Defensive Layers
 
-- DeepSeek frequently produces malformed artifact tags (wrong `type`,
-  missing `=` sign, missing `>`). Our parser has layers of fallback for
-  each pattern. If all fallbacks fail, the content renders as plain
-  Markdown — never crashes.
-- For artifact code generation, Claude and Qwen models produce more
-  reliable JSX syntax than DeepSeek.
+- The artifact parser is designed to handle output format variance across
+  providers — non-standard `type` values, missing `=` in attributes,
+  and malformed opening tags.  All are parse-time edge cases, not
+  provider bugs.
+- Fallback chain: lenient regex matching → body-content sniffing →
+  plain Markdown rendering.  Output never crashes the page.
 
----
+### Sandbox Responsive Behaviour
 
-## Skills
+- **Always inject `<meta name="viewport" content="width=device-width,initial-scale=1">`**
+  in every sandbox type (HTML, SVG, React).  Without it, model-generated
+  fixed-width content overflows on mobile.
+- **`* { max-width: 100%; box-sizing: border-box }`** on all sandbox
+  content prevents horizontal overflow regardless of model output.
+- **React sandbox: remove `#root { min-height: 100vh }`.**
+  The iframe self-sizes via ResizeObserver; `min-height` adds unnecessary
+  blank space below the content.
+- **SVG sandbox: keep `body { min-height: 100vh }`.**
+  SVG is centered via flexbox; removing min-height causes asymmetric
+  whitespace below the graphic.
+
+### Prompt Density & Structure Constraints
+
+- **Density limits** (`lib/defaults.ts`): ≤4 boxes per row, ≤5-word
+  subtitles, ≤2 colour families per artifact.  These are engineering
+  constraints preventing visual overload in the sandbox — not aesthetic
+  preferences.
+- **Streaming-first order**: `<style>` → content HTML → `<script>` LAST.
+  Scripts defer execution until the stream ends; visible content renders
+  earlier.
+- **Prohibited in artifacts**: `position: fixed` (collapses iframe height
+  to zero), HTML/JS comments (waste tokens, break streaming), gradients
+  (DOM diff flicker during streaming), hardcoded gray text (#666 etc. —
+  invisible on dark backgrounds).
+- **Explanatory text outside the artifact** — the Markdown preamble is
+  for explanation; the artifact is visual output only.
+
+### Multi-Tab Storage Safety
+
+- **Two-tab data loss**: Zustand persist writes full-state snapshots.
+  A tab with an empty initial state (before hydration) will overwrite
+  existing data in the other tab.  Fix: `storageBlocked` flag blocks all
+  `setItem`/`removeItem` calls until `onRehydrateStorage` fires.
+- **Server-storage empty-state guard**: `server-storage.ts` has an
+  additional safety net — if `conversations` is empty AND `activeId` is
+  null, the write is silently skipped.
+- **Trailing-timer stale snapshot**: the 1 Hz throttle coalesces writes
+  during streaming, but the timer captured a closure snapshot.  Fix:
+  module-level `latestParsed` that is always up-to-date; the timer reads
+  it instead of the closure variable.
+- **IndexedDB cross-tab mutex**: `navigator.locks.request()` serialises
+  writes so two tabs never race on the same IndexedDB store.
+
+### Streaming Auto-Scroll
+
+- **Polling interval was constantly reset.** `useEffect([messages, streaming])`
+  killed and recreated the 120ms interval on every content update (~16ms),
+  so the polling mechanism never fired.  Only the synchronous
+  `scrollToBottom()` ran — with stale `scrollHeight` for async layouts
+  (code blocks, tables, iframes).
+- **Fix**: split into two effects — synchronous scroll on each render,
+  polling interval bound only to `[streaming]`.  Added `ResizeObserver`
+  on the message wrapper to catch layout-computed height changes.
+
+### Mobile Theme Transition
+
+- **GPU compositor overload**: toggling `data-theme` applies 1.2-1.8s
+  CSS transitions to hundreds of DOM nodes simultaneously via the global
+  attribute-selector rule.  Mobile GPUs drop frames.
+- **Fix**: `@media (max-width: 639px)` reduces `--theme-transition-duration`
+  to 600ms on both light and dark roots.  `localStorage.setItem` deferred
+  via `setTimeout(0)` to avoid blocking the current frame.
+- **ThemeToggle icon freeze**: the SVG morph animation used a three-stage
+  `transitionend` chain.  On mobile, `transitionend` may not fire if the
+  transition is interrupted or the compositor is busy.  Fix: every stage
+  has a `setTimeout` fallback at `stageDuration + 100ms`.
+
+### ConversationItem Menu (Portal)
+
+- **Overflow clipping**: the `⋮` dropdown is inside an `overflow-y-auto`
+  scroll container; CSS cannot make a child of a scroll container break
+  out of its clip boundary.
+- **Fix**: render the menu via `createPortal` to `document.body` with
+  `position: fixed` and viewport-relative coordinates.  Direction flip
+  (`top-full` vs `bottom-full`) based on `window.innerHeight`.
+
+### Auto-Title Generation
+
+- After the first user+assistant exchange, `generateTitle()` calls
+  `/api/chat` with a lightweight summarisation prompt.  Falls back to
+  `firstUserMsg.slice(0, 30)` if the API call fails.
+- Triggered via `prevStreamingRef` in ChatView detecting `isStreaming`
+  going from true to false.
+
+### SelectionReply Mobile Support
+
+- **Mobile touchend**: Added `touchend` listener alongside `mouseup`.
+  Synthetic `mousedown` after `touchend` would immediately hide the
+  button — fixed with `touchFlagRef` to skip it for 500ms.
+- **Selection-handle drag**: Added `selectionchange` listener that
+  re-reads `getSelection()` while the button is visible, so dragging
+  the selection handles updates the captured text.
+
+### Message Action Buttons on Mobile
+
+- **Tap-to-reveal**: `actionsVisible` state toggled on bubble click.
+  Desktop hover behaviour unchanged (`group-hover:opacity-100`).
+- **Assistant avatar**: `hidden sm:block` — hidden on mobile to save
+  horizontal space.
 
 - **frontend-design**: Read before developing any UI component — applies to all files
   under components/chat/, components/sidebar/, components/model/, components/artifact/

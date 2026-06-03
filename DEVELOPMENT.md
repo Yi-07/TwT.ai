@@ -360,13 +360,13 @@ response logging via `ReadableStream.tee()` — appends to `modelresponse` file.
 
 ## Phase 14 — Parser Robustness
 
-### DeepSeek malformed tag fallbacks (2d70082, 5a277ad, d56c217)
+### Parser defensive layers — handling output format variance (2d70082, 5a277ad, d56c217)
 
-Three common DeepSeek output defects, all handled by parser:
+Three common format edge-cases, all handled by parser (not model defects):
 
-| Defect | Example | Fix |
-|--------|---------|-----|
-| `type` value is Chinese | `type="折线图"` | Sniff body content to determine type |
+| Edge case | Example | Fix |
+|-----------|---------|-----|
+| `type` value is non-standard | `type="折线图"` | Sniff body content to determine type |
 | `title=` sign missing | `title"图表"` | Regex makes `=` optional |
 | `>` missing | `` <artifact type="react" title="X"export... `` | Detect code keywords after title → auto-close |
 
@@ -1080,30 +1080,209 @@ covering the streaming pipeline, store persistence layer, and UI rendering
 
 ---
 
-## Model-Specific Issues
+## Phase 31 — GPU Compositor Layer Fix
 
-| Model | Artifact tag quality | Code generation quality | Recommendation |
-|-------|---------------------|------------------------|----------------|
-| Claude 4.x | Excellent — follows format correctly | Excellent — valid JSX | Best for artifacts |
-| DeepSeek v4-pro | Poor — often omits `>`, `=`, or writes Chinese in `type` | Inconsistent — ~40% of responses have broken JSX | Use with parser fallbacks |
-| ModelScope Qwen | Good — usually correct format | Good — generally valid JSX | Reliable alternative |
+### `fix: promote InputBar to GPU compositor layer to prevent iframe click interception` (824856f)
+
+When `MessageBubble`'s `animate-fade-in` retains `transform: translateY(0)` via
+`animation-fill-mode: forwards`, the iframe inside is promoted to a GPU compositor
+surface.  The browser's hit-testing tree walks GPU layers before CPU-rendered
+elements, so clicks on the InputBar (z-10, CPU) were intercepted by the iframe
+GPU layer below it.
+
+**Fix**: `[transform:translateZ(0)]` on InputBar's wrapper — a visual no-op that
+forces the element into its own GPU layer, restoring correct hit-test ordering.
+
+---
+
+## Phase 32 — Sidebar Menu Overhaul
+
+### `feat: Portal-based dropdown menu with rename, delete, and confirmation UI` (45f0eb2)
+
+Replaced the hidden `group-hover` delete button with an always-accessible `⋮`
+ellipsis menu.  Key design decisions:
+
+- **Portal to `document.body`**: the dropdown lives inside an `overflow-y-auto`
+  scroll container; Portal escapes CSS overflow clipping.
+- **Viewport-relative positioning**: `getBoundingClientRect()` on the `⋮` button
+  computes `position: fixed` coordinates.  Direction flips upward when
+  `btn.bottom + menuH > window.innerHeight`.
+- **Rename modal**: centered overlay (`fixed` + `backdrop-blur`) with pre-filled
+  input, OK triggers confirmation step.
+- **Confirmation UI**: matching the edit-retry button style (`rounded-xl`,
+  `bg-[#E8E4DC]`/`bg-[#2D2B27]` for Cancel, `bg-primary` for Confirm,
+  `bg-red-500` for Delete).
+- **Active highlight**: `bg-[#F0ECE2]` / `bg-[#2A2722]` — warmer than the
+  subtle `bg-canvas-card` for better visual distinction.
+- **Hover-reveal**: timestamp and `⋮` button use `opacity-0 group-hover:opacity-100`
+  on all conversations.
+
+`ConversationList` passes `onRename={updateTitle}`; `useConversation` exposes
+`updateTitle` from the store.
+
+---
+
+## Phase 33 — Auto-Title Generation
+
+### `feat: auto-generate conversation titles after first exchange` (bde66c8)
+
+`lib/utils/generateTitle.ts` — calls `/api/chat` with a lightweight summarisation
+prompt after the first user+assistant exchange completes.  Collects SSE chunks,
+cleans quotes and punctuation, caps at 80 chars.  Falls back to
+`firstUserMsg.slice(0, 30)` if the API call fails.
+
+Triggered in ChatView via `prevStreamingRef` detecting `isStreaming` going from
+true to false, checking for exactly 2 messages and `title === "New conversation"`.
+
+---
+
+## Phase 34 — Sandbox Responsive + Prompt Density
+
+### `feat: make artifact sandbox responsive, add content density rules to prompt` (b18e49e)
+
+**ArtifactSandbox**: added `<meta name="viewport" content="width=device-width,initial-scale=1">`
+and `*{max-width:100%;box-sizing:border-box}` to HTML/React/SVG sandboxes to
+prevent horizontal overflow on mobile.  Removed `#root { min-height: 100vh }`
+from React sandbox — the ResizeObserver already reports content height; min-height
+added unnecessary blank space.  SVG retains `body { min-height: 100vh }` for
+vertical centering.
+
+**SYSTEM_PROMPT_ARTIFACT**: added three new sections:
+- **Content Density & Complexity Limits** — ≤4 boxes/row, ≤5-word subtitles,
+  ≤2 colour families, no comments, explanatory text outside artifact
+- **Streaming-First Structure Order** — `<style>` → content HTML → `<script>` last
+- **Prohibited CSS** — `position: fixed` (collapses iframe), gradients (DOM diff
+  flicker), hardcoded gray text (#666 etc.)
+
+---
+
+## Phase 35 — Multi-Tab Storage Safety
+
+### `fix: block persist writes until hydration to prevent multi-tab data loss` (cbf9ea6)
+
+Module-level `storageBlocked` flag set to `true` on module load, cleared in
+`onRehydrateStorage`.  The JSON storage wrapper checks it before `setItem`/`removeItem`,
+blocking the initial empty-state write that would overwrite existing data in
+other tabs.  Applies to both IndexedDB and PostgreSQL storage modes.
+
+### Additional storage hardening (471be1d)
+
+- **Server-storage trailing timer**: replaced closure-captured snapshot with
+  module-level `latestParsed` — the 1 Hz throttle now writes the most recent
+  state, not the state from when the timer was scheduled.
+- **IndexedDB cross-tab mutex**: `navigator.locks.request("twt-conversations", ...)`
+  serialises writes across tabs.
+- **Server-storage empty-state guard**: `setItem` skips writes when
+  `conversations` is empty AND `activeId` is null — second safety net.
+
+### `fix: modelId on conversation creation` (471be1d)
+
+`ConversationList` and `useConversation.sendMessage` now create conversations
+with `useModelStore.getState().activeModelId` (currently selected model) instead
+of `getDefaultModel()` which always returns the `.env` default.
+
+---
+
+## Phase 36 — Streaming Scroll Fix
+
+### `fix: streaming auto-scroll — decouple polling from messages, add ResizeObserver` (b0da5f7)
+
+Split the `useEffect` in `MessageList`:
+- Synchronous `scrollToBottom()` on every render (not tied to a dependency array)
+- 120ms polling interval bound only to `[streaming]` — no longer killed and
+  recreated on every ~16ms content update
+- `ResizeObserver` on the inner message wrapper catches layout-computed height
+  changes from Markdown/code-block rendering
+
+---
+
+## Phase 37 — Mobile Theme Transition
+
+### `fix: mobile theme toggle lag — reduce transition duration, defer localStorage` (cbe87bd)
+
+- **globals.css**: `@media (max-width: 639px)` reduces `--theme-transition-duration`
+  from 1800ms to 600ms — cuts GPU compositor paint frames from ~108 to ~36
+- **ThemeToggle**: `localStorage.setItem` deferred via `setTimeout(0)` to avoid
+  blocking the current frame
+
+### `fix: add setTimeout fallback for ThemeToggle transitionend chain` (f7049d6)
+
+The SVG morph animation uses a three-stage `transitionend` chain.  On mobile,
+`transitionend` may not fire if the compositor is busy.  Each stage now has a
+`setTimeout` fallback at `stageDuration + 100ms`.  `applyFrame()` resets to the
+target starting frame before each animation, preventing PC rapid-toggling from
+starting from an intermediate state.
+
+---
+
+## Phase 38 — Mobile Interaction Fixes
+
+### `fix: add mobile touch support to SelectionReply and message action buttons` (7429e6a)
+
+**SelectionReply**: added `touchend` listener alongside `mouseup` for mobile
+text selection.  `selectionchange` listener updates captured text while the user
+drags selection handles.  `touchFlagRef` prevents synthetic `mousedown` (fired
+~300ms after `touchend`) from immediately hiding the button.
+
+**MessageBubble**: tap-to-reveal action buttons (`actionsVisible` state toggled
+on bubble click).  Desktop hover unchanged.  Assistant avatar hidden on small
+screens (`hidden sm:block`).
+
+---
+
+## Phase 31 — GPU Compositor Layer Fix
+
+### `fix: promote InputBar to GPU compositor layer to prevent iframe click interception` (824856f)
+
+**Symptom**: When an artifact iframe was rendered in the chat, clicking on the
+InputBar textarea passed through to the iframe. The cursor appeared on the
+artifact diagram instead of changing to a text I-beam, and clicks focused the
+iframe instead of the textarea.  The InputBar worked fine in areas with no
+iframe underneath — only the overlapping region was affected.
+
+**Root cause**: `MessageBubble` uses `animate-fade-in` with `animation-fill-mode:
+forwards`.  The final keyframe has `transform: translateY(0)`, which the
+`forwards` fill preserves permanently.  Any `transform` value other than `none`
+creates a GPU compositor layer — the iframe (child of the animated wrapper) was
+thus rendered in a GPU surface.  The browser's hit-testing tree walks GPU
+layers before CPU-rendered elements, so the iframe intercepted clicks even
+though InputBar had `relative z-10`.
+
+**Fix**: Added `[transform:translateZ(0)]` to InputBar's wrapper div
+(`components/chat/InputBar.tsx`).  `translateZ(0)` is a visual no-op — it moves
+nothing, scales nothing.  Its sole purpose is to force the InputBar into its
+own GPU compositor layer so the layer-tree ordering respects CSS `z-index`.
+
+**Dead ends explored** (5+ attempts across multiple files):
+| Attempt | Why it failed |
+|---------|---------------|
+| Clamp iframe height via `getBoundingClientRect` | Made artifacts too short in the lower half of the viewport |
+| `contain: paint` on MessageList scroll container | Does not clip iframe hit-testing (containment only affects paint, not event routing) |
+| Prop-drilling `maxHeight` through 4 components | Extra wrapper div broke the flex layout chain |
+| `bg-canvas` on InputBar | Cosmetic only — does not affect compositor hit-testing |
+| `forwardRef` + ResizeObserver on MessageList | Empty-state early return caused null ref timing gap |
+
+**Lesson**: When iframes intercept clicks despite correct `z-index`, check
+whether the iframe or its ancestor has a GPU-promoting property (`transform`,
+`will-change`, `opacity < 1`, `filter`, `backdrop-filter`).  The fix is to
+promote the victim element to its own GPU layer, not to fight the iframe's
+geometry.
 
 ---
 
 ## Known Limitations
 
-- DeepSeek artifact code generation quality is inconsistent — JSX syntax often
-  broken (missing `function` keyword, malformed object literals, hex colours
-  missing `#` prefix)
-- Recharts charts generated by model may use invisible grid-line colours on
-  light backgrounds (`#e0e0e0` on white); system prompt now instructs otherwise
-  but model compliance is imperfect
-- No mobile sidebar toggle: sidebar is hidden below `md` breakpoint with no hamburger
+- The artifact parser provides layers of defense (lenient matching, body sniffing,
+  flush fallback) — malformed tags degrade gracefully to plain Markdown
+- Recharts charts may use invisible grid-line colours on light backgrounds;
+  system prompt instructs otherwise but model compliance is imperfect
+- No mobile sidebar toggle: sidebar is `fixed` overlay below `lg` breakpoint
 - Artifact React sandbox: `export default` stripping is regex-based, may fail
   on complex export patterns
-- No authentication or multi-user support
 - Switching conversations during active streaming does not cancel the stream
   (content arrives in the original conversation, wasting tokens)
 - Stacking multiple `ThemeToggle` instances on one page causes SVG `id` collisions
+  (`#crescent-mask`, `#mask-circle`, `#body`, `#rays` — currently safe as only
+  one toggle exists)
   (`#crescent-mask`, `#mask-circle`, `#body`, `#rays` — currently safe as only
   one toggle exists)
