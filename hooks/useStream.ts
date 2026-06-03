@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, startTransition } from "react";
 import type { Message } from "@/types/conversation";
 import type { ModelOptions } from "@/types/provider";
 import { logger } from "@/lib/utils/logger";
@@ -30,7 +30,9 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
   const abortRef = useRef<AbortController | null>(null);
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingRef = useRef<string[]>([]);
-  const rafRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const fallbackRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isStreamingRef = useRef(false);
   const sendIdRef = useRef(0);
 
   const clearSlowTimer = useCallback(() => {
@@ -41,24 +43,50 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
     setIsSlowResponse(false);
   }, []);
 
-  const flushPending = useCallback(() => {
-    const chunks = pendingRef.current;
-    if (chunks.length) {
-      const flushed = chunks.join("");
+  const flush = useCallback(() => {
+    if (pendingRef.current.length) {
+      const chunk = pendingRef.current.join("");
       pendingRef.current = [];
-      setRawContent((prev) => prev + flushed);
+      setRawContent((prev) => prev + chunk);
     }
-    rafRef.current = 0;
   }, []);
+
+  const stopFlushLoop = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (fallbackRef.current) {
+      clearInterval(fallbackRef.current);
+      fallbackRef.current = null;
+    }
+  }, []);
+
+  const startFlushLoop = useCallback(() => {
+    if (rafRef.current) return;
+    const tick = () => {
+      flush();
+      if (isStreamingRef.current) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    // Fallback interval — keeps flushing when RAF pauses (background tab,
+    // mobile app switch). 200ms is slow enough to be cheap, fast enough
+    // to prevent visible lag when the user returns.
+    fallbackRef.current = setInterval(() => {
+      if (pendingRef.current.length) flush();
+    }, 200);
+  }, [flush]);
 
   const abort = useCallback(() => {
     abortRef.current?.abort();
     clearSlowTimer();
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
-    }
-  }, [clearSlowTimer]);
+    stopFlushLoop();
+    pendingRef.current = [];
+  }, [clearSlowTimer, stopFlushLoop]);
 
   const send = useCallback(
     (messages: Message[], conversationId?: string) => {
@@ -67,13 +95,11 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
       const sid = ++sendIdRef.current;
       setRawContent("");
       pendingRef.current = [];
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = 0;
-      }
+      stopFlushLoop();
       setError(null);
       setIsStreaming(true);
       setIsSlowResponse(false);
+      isStreamingRef.current = true;
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -134,9 +160,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
                     logger.info("useStream first chunk received");
                   }
                   pendingRef.current.push(delta);
-                  if (!rafRef.current) {
-                    rafRef.current = requestAnimationFrame(() => flushPending());
-                  }
+                  startFlushLoop();
                 }
               } catch {
                 // skip unparseable chunks during streaming
@@ -162,10 +186,10 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
                   clearSlowTimer();
                 }
                 pendingRef.current.push(delta);
+                startFlushLoop();
               }
             } catch { /* skip */ }
           }
-          flushPending();
         })
         .catch((err) => {
           if (err.name !== "AbortError") {
@@ -176,21 +200,26 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
           }
         })
         .finally(() => {
-          // Guard: if a new send() was called before this finally fires
-          // (retry / edit-submit), skip cleanup to avoid corrupting the new stream.
           if (sendIdRef.current !== sid) return;
           logger.info("useStream ended");
           clearSlowTimer();
-          flushPending();
-          if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = 0;
+          isStreamingRef.current = false;
+          stopFlushLoop();
+          // Final drain
+          if (pendingRef.current.length) {
+            setRawContent(
+              (prev) => prev + pendingRef.current.join(""),
+            );
+            pendingRef.current = [];
           }
-          setIsStreaming(false);
+          // startTransition defers the expensive Markdown re-parse so the
+          // browser can finish the current paint before switching modes.
+          startTransition(() => setIsStreaming(false));
           abortRef.current = null;
         });
     },
-    [opts.providerId, opts.modelOptions, clearSlowTimer, flushPending],
+    [opts.providerId, opts.modelOptions, clearSlowTimer,
+     startFlushLoop, stopFlushLoop],
   );
 
   // Cleanup slow timer on unmount
