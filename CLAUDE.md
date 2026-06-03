@@ -580,6 +580,29 @@ show a placeholder while code is being generated, then the iframe appears once
 - **Assistant avatar**: `hidden sm:block` — hidden on mobile to save
   horizontal space.
 
+### Streaming Rendering Performance
+
+- **ReactMarkdown is the bottleneck, not the parser.**  The artifact parser
+  is a lightweight state machine; `ReactMarkdown` + `remarkGfm` running
+  on every text segment every frame is what causes streaming stutter.
+- **Memo by content**: wrap `ReactMarkdown` in `React.memo` with
+  `prev.content === next.content`.  Stable text segments (text-0, text-1...)
+  skip re-parsing entirely — only the actively growing segment incurs cost.
+- **Throttle the growing segment**: a module-level `lastMarkdownRender`
+  timer gates memo to ~100ms intervals during streaming.  Content changes
+  faster than 100ms are skipped, keeping Markdown parse load to ~10 fps
+  while raw text appends at full speed.
+- **RAF + fallback interval**: SSE deltas are buffered and flushed via
+  `requestAnimationFrame` (smooth foreground rendering) with a 200ms
+  `setInterval` fallback (prevents data stalling when the tab is
+  backgrounded or on mobile app-switch).
+- **`useEffect` over `useLayoutEffect`** for rawContent → store sync:
+  async effect lets the browser paint before the store update, avoiding
+  frame drops during heavy streaming.
+- **`startTransition`** wraps `setIsStreaming(false)` so the final
+  Markdown re-parse is scheduled as low-priority — the browser finishes
+  the current paint before switching from plain-text to full GFM.
+
 - **frontend-design**: Read before developing any UI component — applies to all files
   under components/chat/, components/sidebar/, components/model/, components/artifact/
 - **context7**: Read when using Next.js 15, Tailwind v4, or Zustand APIs — ensures

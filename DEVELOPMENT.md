@@ -1230,6 +1230,37 @@ screens (`hidden sm:block`).
 
 ---
 
+## Phase 39 — Streaming Rendering Performance
+
+### `fix: streaming smoothness — RAF+fallback, useEffect sync, ReactMarkdown memo` (9043e74)
+
+Three-layer optimization to eliminate streaming text stutter:
+
+**useStream.ts**: replaced `setInterval` with `requestAnimationFrame` + 200ms
+`setInterval` fallback.  RAF keeps foreground rendering smooth at display
+refresh rate; the fallback prevents data stalling when the tab is backgrounded
+(mobile app-switch, desktop tab-switch).  `isStreamingRef` controls the RAF
+loop lifecycle.  `startTransition(() => setIsStreaming(false))` defers the
+post-stream Markdown re-parse to low-priority.
+
+**ChatView.tsx**: `useLayoutEffect` → `useEffect` for rawContent → store sync.
+Asynchronous effect lets the browser paint before the store update, avoiding
+blocked frames during heavy streaming.
+
+**MessageBubble.tsx**: extracted `ReactMarkdown + remarkGfm` into `MemoMarkdown`
+— a `React.memo` wrapper with `prev.content === next.content` comparison.
+Stable text segments skip re-parsing entirely.  Only the actively growing
+segment incurs Markdown cost each frame.
+
+### `perf: throttle ReactMarkdown renders to 100ms during streaming` (bacaf41)
+
+Module-level `lastMarkdownRender` timer gates the `MemoMarkdown` comparator:
+if `streaming` is true and less than 100ms since the last render, skip even
+when content changed.  Grows Markdown re-parse to ~10 fps while raw text
+appends continue at full speed.  Combined with content-memo, the per-frame
+ReactMarkdown overhead drops ~90%.
+
+---
 ## Phase 31 — GPU Compositor Layer Fix
 
 ### `fix: promote InputBar to GPU compositor layer to prevent iframe click interception` (824856f)
