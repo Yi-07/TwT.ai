@@ -59,7 +59,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             type="password"
             autoFocus
             placeholder="Password"
-            className="w-full rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-ink outline-none transition-[border-color,background-color,color] duration-200 focus:border-primary dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark"
+            className="w-full rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-ink outline-none transition-[border-color] duration-200 focus:border-primary dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark"
+              style={{ transitionDuration: "200ms" }}
           />
           <button
             type="submit"

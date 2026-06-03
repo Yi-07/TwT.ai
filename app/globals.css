@@ -94,6 +94,17 @@
   --comp-blue-text: #BFDBFE;
 }
 
+/* Shorter transitions on mobile — prevents GPU compositor overload
+   from hundreds of simultaneous 1.8s transitions. */
+@media (max-width: 639px) {
+  :root {
+    --theme-transition-duration: 600ms;
+  }
+  :root[data-theme="dark"] {
+    --theme-transition-duration: 600ms;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -155,29 +166,27 @@
    classes instead of the universal * selector, which caused measurable
    style-recalc overhead on every DOM node during streaming.
    Asymmetric: light→dark = 1200ms, dark→light = 1800ms. */
-@layer base {
-  html,
-  body,
-  pre,
-  code,
-  [class*="prose"] *,
-  [class*="bg-"],
-  [class*="text-"],
-  [class*="border-"],
-  [class*="from-"],
-  [class*="to-"],
-  [class*="via-"],
-  [class*="shadow-"],
-  [class*="ring-"],
-  [class*="accent-"],
-  [class*="caret-"],
-  [class*="fill-"],
-  [class*="stroke-"],
-  [class*="placeholder-"] {
-    transition-property: background-color, color, border-color;
-    transition-duration: var(--theme-transition-duration, 300ms);
-    transition-timing-function: var(--theme-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
-  }
+html,
+body,
+pre,
+code,
+[class*="prose"] *,
+[class*="bg-"],
+[class*="text-"],
+[class*="border-"],
+[class*="from-"],
+[class*="to-"],
+[class*="via-"],
+[class*="shadow-"],
+[class*="ring-"],
+[class*="accent-"],
+[class*="caret-"],
+[class*="fill-"],
+[class*="stroke-"],
+[class*="placeholder-"] {
+  transition-property: background-color, color, border-color;
+  transition-duration: var(--theme-transition-duration, 300ms);
+  transition-timing-function: var(--theme-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 /* Tailwind Typography adds backtick decorations to inline <code> via

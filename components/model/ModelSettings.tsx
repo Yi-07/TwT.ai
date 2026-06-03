@@ -78,7 +78,8 @@ export function ModelSettings() {
               onChange={(e) =>
                 update({ maxTokens: parseInt(e.target.value, 10) || 4096 })
               }
-              className="w-full rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark transition-[border-color,background-color,color] duration-200"
+              className="w-full rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark transition-[border-color] duration-200"
+              style={{ transitionDuration: "200ms" }}
             />
           </div>
 
@@ -91,7 +92,8 @@ export function ModelSettings() {
               value={systemPrompt}
               onChange={(e) => update({ systemPrompt: e.target.value })}
               placeholder="Optional system instructions..."
-              className="w-full resize-none rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark dark:placeholder:text-on-dark-soft transition-[border-color,background-color,color] duration-200"
+              className="w-full resize-none rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none dark:border-hairline dark:bg-surface-dark-elevated dark:text-on-dark dark:placeholder:text-on-dark-soft transition-[border-color] duration-200"
+              style={{ transitionDuration: "200ms" }}
             />
           </div>
         </div>

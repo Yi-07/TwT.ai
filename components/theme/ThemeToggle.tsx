@@ -183,11 +183,14 @@ export function ThemeToggle() {
   const toggle = useCallback(() => {
     const next = theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("twt-theme", next);
-    } catch {
-      // localStorage unavailable
-    }
+    // Defer sync disk write so it doesn't block the current frame
+    setTimeout(() => {
+      try {
+        localStorage.setItem("twt-theme", next);
+      } catch {
+        // localStorage unavailable
+      }
+    }, 0);
     setTheme(next);
   }, [theme]);
 
