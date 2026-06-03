@@ -243,8 +243,17 @@ function PlaceholderBar({
   );
 }
 
+let lastMarkdownRender = 0;
+
 const MemoMarkdown = memo(
-  function MemoMarkdown({ content }: { content: string }) {
+  function MemoMarkdown({
+    content,
+    streaming,
+  }: {
+    content: string;
+    streaming?: boolean;
+  }) {
+    void streaming; // consumed by memo comparator — ESLint cannot see it
     return (
       <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-code-block [&_pre]:text-ink dark:[&_pre]:text-on-dark-soft [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-code-block [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_table]:w-full [&_th]:border [&_th]:border-hairline [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-hairline [&_td]:px-3 [&_td]:py-2">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -253,15 +262,25 @@ const MemoMarkdown = memo(
       </div>
     );
   },
-  (prev, next) => prev.content === next.content,
+  (prev, next) => {
+    if (prev.content === next.content) return true;
+    if (next.streaming && Date.now() - lastMarkdownRender < 100) return true;
+    lastMarkdownRender = Date.now();
+    return false;
+  },
 );
 
 interface SegmentRendererProps {
   seg: Segment;
   onSendPrompt?: (text: string) => void;
+  streaming?: boolean;
 }
 
-function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
+function SegmentRenderer({
+  seg,
+  onSendPrompt,
+  streaming,
+}: SegmentRendererProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [hovered, setHovered] = useState(false);
 
@@ -270,7 +289,7 @@ function SegmentRenderer({ seg, onSendPrompt }: SegmentRendererProps) {
   }, []);
 
   if (seg.type === "text") {
-    return <MemoMarkdown content={seg.content} />;
+    return <MemoMarkdown content={seg.content} streaming={streaming} />;
   }
 
   if (seg.type === "placeholder") {
@@ -516,6 +535,7 @@ export function MessageBubble({
                     key={seg.id}
                     seg={seg}
                     onSendPrompt={onSendPrompt}
+                    streaming={streaming}
                   />
                 ))}
               </div>
