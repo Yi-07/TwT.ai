@@ -5,6 +5,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const RAY_COUNT = 8;
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+// Stage durations (ms) — kept as constants so setTimeout fallbacks
+// always match the CSS transition durations exactly.
+const RAYS_DURATION = 550; // opacity 0.35s | transform 0.55s
+const BODY_DURATION = 400; // r 0.4s
+const MASK_DURATION = 350; // r 0.35s (moon) | r 0.3s (sun)
+const FALLBACK_PAD = 100; // safety margin so timer doesn't beat transitionend
+
 function positionRays(
   raysG: SVGGElement,
   inner: number,
@@ -52,10 +59,28 @@ function applyFrame(svg: SVGSVGElement, frame: "sun" | "moon") {
   }
 }
 
+type Fallback = { cancel: () => void } | null;
+
+function withFallback(
+  duration: number,
+  animId: number,
+  next: () => void,
+): Fallback {
+  const timer = setTimeout(() => {
+    if (!isCurrentAnim(animId)) return;
+    next();
+  }, duration + FALLBACK_PAD);
+  return { cancel: () => clearTimeout(timer) };
+}
+
 function animateToMoon(svg: SVGSVGElement, animId: number) {
   const raysG = svg.querySelector("#rays") as SVGGElement;
   const body = svg.querySelector("#body") as SVGCircleElement;
   const maskCirc = svg.querySelector("#mask-circle") as SVGCircleElement;
+
+  // Reset to sun frame so we always start from a clean state
+  applyFrame(svg, "sun");
+  let fb: Fallback = null;
 
   // Stage 1: rays fade + rotate ccw
   raysG.style.transition =
@@ -63,10 +88,9 @@ function animateToMoon(svg: SVGSVGElement, animId: number) {
   raysG.style.opacity = "0";
   raysG.style.transform = "rotate(-45deg)";
 
-  const onRaysDone = (e: TransitionEvent) => {
-    if (e.propertyName !== "opacity") return;
-    raysG.removeEventListener("transitionend", onRaysDone);
-    if (animIdRef && !animIdRef.current) return; // stale guard — see caller
+  const onRaysDone = () => {
+    fb?.cancel();
+    raysG.removeEventListener("transitionend", onRaysDoneTransition);
     if (!isCurrentAnim(animId)) return;
 
     // Stage 2: body swells, switches to filled
@@ -77,18 +101,31 @@ function animateToMoon(svg: SVGSVGElement, animId: number) {
     body.setAttribute("stroke-width", "0");
     body.setAttribute("mask", "url(#crescent-mask)");
 
-    const onBodyDone = (e2: TransitionEvent) => {
-      if (e2.propertyName !== "r") return;
-      body.removeEventListener("transitionend", onBodyDone);
-      if (!isCurrentAnim(animId)) return;
-
-      // Stage 3: mask circle expands, bites out crescent
-      maskCirc.style.transition = "r 0.35s ease-out";
-      maskCirc.setAttribute("r", "8");
-    };
-    body.addEventListener("transitionend", onBodyDone);
+    fb = withFallback(BODY_DURATION, animId, onBodyDone);
+    body.addEventListener("transitionend", onBodyDoneTransition);
   };
-  raysG.addEventListener("transitionend", onRaysDone);
+
+  const onBodyDone = () => {
+    fb?.cancel();
+    body.removeEventListener("transitionend", onBodyDoneTransition);
+    if (!isCurrentAnim(animId)) return;
+
+    // Stage 3: mask circle expands, bites out crescent
+    maskCirc.style.transition = "r 0.35s ease-out";
+    maskCirc.setAttribute("r", "8");
+  };
+
+  const onRaysDoneTransition = (e: TransitionEvent) => {
+    if (e.propertyName !== "opacity") return;
+    onRaysDone();
+  };
+  const onBodyDoneTransition = (e2: TransitionEvent) => {
+    if (e2.propertyName !== "r") return;
+    onBodyDone();
+  };
+
+  fb = withFallback(RAYS_DURATION, animId, onRaysDone);
+  raysG.addEventListener("transitionend", onRaysDoneTransition);
 }
 
 function animateToSun(svg: SVGSVGElement, animId: number) {
@@ -96,13 +133,17 @@ function animateToSun(svg: SVGSVGElement, animId: number) {
   const body = svg.querySelector("#body") as SVGCircleElement;
   const maskCirc = svg.querySelector("#mask-circle") as SVGCircleElement;
 
+  // Reset to moon frame so we always start from a clean state
+  applyFrame(svg, "moon");
+  let fb: Fallback = null;
+
   // Stage 1: mask circle retracts
   maskCirc.style.transition = "r 0.3s ease-in";
   maskCirc.setAttribute("r", "0");
 
-  const onMaskDone = (e: TransitionEvent) => {
-    if (e.propertyName !== "r") return;
-    maskCirc.removeEventListener("transitionend", onMaskDone);
+  const onMaskDone = () => {
+    fb?.cancel();
+    maskCirc.removeEventListener("transitionend", onMaskDoneTransition);
     if (!isCurrentAnim(animId)) return;
 
     // Stage 2: body shrinks, switches to stroke
@@ -113,21 +154,34 @@ function animateToSun(svg: SVGSVGElement, animId: number) {
     body.setAttribute("stroke-width", "2");
     body.removeAttribute("mask");
 
-    const onBodyDone = (e2: TransitionEvent) => {
-      if (e2.propertyName !== "r") return;
-      body.removeEventListener("transitionend", onBodyDone);
-      if (!isCurrentAnim(animId)) return;
-
-      // Stage 3: rays expand + rotate cw back
-      positionRays(raysG, 10, 15, 0);
-      raysG.style.transition =
-        "opacity 0.35s ease-in-out, transform 0.55s ease-in-out";
-      raysG.style.opacity = "1";
-      raysG.style.transform = "rotate(0deg)";
-    };
-    body.addEventListener("transitionend", onBodyDone);
+    fb = withFallback(BODY_DURATION, animId, onBodyDone);
+    body.addEventListener("transitionend", onBodyDoneTransition);
   };
-  maskCirc.addEventListener("transitionend", onMaskDone);
+
+  const onBodyDone = () => {
+    fb?.cancel();
+    body.removeEventListener("transitionend", onBodyDoneTransition);
+    if (!isCurrentAnim(animId)) return;
+
+    // Stage 3: rays expand + rotate cw back
+    positionRays(raysG, 10, 15, 0);
+    raysG.style.transition =
+      "opacity 0.35s ease-in-out, transform 0.55s ease-in-out";
+    raysG.style.opacity = "1";
+    raysG.style.transform = "rotate(0deg)";
+  };
+
+  const onMaskDoneTransition = (e: TransitionEvent) => {
+    if (e.propertyName !== "r") return;
+    onMaskDone();
+  };
+  const onBodyDoneTransition = (e2: TransitionEvent) => {
+    if (e2.propertyName !== "r") return;
+    onBodyDone();
+  };
+
+  fb = withFallback(MASK_DURATION, animId, onMaskDone);
+  maskCirc.addEventListener("transitionend", onMaskDoneTransition);
 }
 
 // Module-level ref shared across animation cycles — reset on each new cycle.
