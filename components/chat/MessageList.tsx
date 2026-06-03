@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import type { Message } from "@/types/conversation";
 import { useConversationStore } from "@/lib/store/conversation";
 import { MessageBubble } from "./MessageBubble";
@@ -26,18 +26,31 @@ export function MessageList({
   const lastUserIdx = [...messages].reverse().findIndex((m) => m.role === "user");
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const nearBottomRef = useRef(true);
+
+  const isNearBottom = useCallback(() => {
+    const c = containerRef.current;
+    if (!c) return true;
+    return c.scrollTop + c.clientHeight >= c.scrollHeight - 80;
+  }, []);
 
   const scrollToBottom = () => {
-    const container = containerRef.current;
-    if (!container) return;
-    const threshold = 80;
-    const isNearBottom =
-      container.scrollTop + container.clientHeight >=
-      container.scrollHeight - threshold;
-    if (isNearBottom) {
-      container.scrollTop = container.scrollHeight;
-    }
+    if (!nearBottomRef.current) return;
+    const c = containerRef.current;
+    if (c) c.scrollTop = c.scrollHeight;
   };
+
+  // Track whether the user is near the bottom.  Upward scroll stops
+  // auto-follow; scrolling back to the bottom resumes it immediately.
+  useEffect(() => {
+    const c = containerRef.current;
+    if (!c) return;
+    const onScroll = () => {
+      nearBottomRef.current = isNearBottom();
+    };
+    c.addEventListener("scroll", onScroll, { passive: true });
+    return () => c.removeEventListener("scroll", onScroll);
+  }, [isNearBottom]);
 
   // Immediate scroll on each content update
   useEffect(() => {

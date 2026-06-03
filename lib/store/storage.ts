@@ -8,6 +8,13 @@ function noopStorage(): StateStorage {
   };
 }
 
+// Throttle: streaming updates fire ~60 writes/s into IndexedDB.
+// Coalesce into ≤1 write/s — same pattern as server-storage.ts.
+let lastWriteTime = 0;
+let trailingTimer: ReturnType<typeof setTimeout> | null = null;
+let latestValue: string | null = null;
+const THROTTLE_MS = 1000;
+
 function createIdbStorage(storeName: string): StateStorage {
   if (typeof window === "undefined") {
     return noopStorage();
@@ -50,19 +57,40 @@ function createIdbStorage(storeName: string): StateStorage {
       }
     },
     async setItem(name: string, value: string) {
-      try {
-        await ensureDb();
-        // Web Locks API — cross-tab mutual exclusion so only one tab
-        // writes at a time, preventing stale-snapshot overwrite.
-        if (typeof navigator !== "undefined" && navigator.locks) {
-          await navigator.locks.request("twt-conversations", async () => {
-            await idbMod.set(name, value, db);
-          });
-        } else {
-          await idbMod.set(name, value, db);
+      latestValue = value;
+
+      const doWrite = async () => {
+        const v = latestValue;
+        if (!v) return;
+        try {
+          await ensureDb();
+          if (typeof navigator !== "undefined" && navigator.locks) {
+            await navigator.locks.request("twt-conversations", async () => {
+              await idbMod.set(name, v, db);
+            });
+          } else {
+            await idbMod.set(name, v, db);
+          }
+          lastWriteTime = Date.now();
+        } catch {
+          // silently ignore write errors
         }
-      } catch {
-        // silently ignore write errors
+      };
+
+      const now = Date.now();
+      if (now - lastWriteTime >= THROTTLE_MS) {
+        // Enough time since last write — persist immediately
+        lastWriteTime = now;
+        if (latestValue) await doWrite();
+      } else {
+        // Streaming — coalesce into trailing timer.
+        // Use module-level latestValue so the deferred write always
+        // sees the most recent state, not a stale closure snapshot.
+        if (trailingTimer) clearTimeout(trailingTimer);
+        trailingTimer = setTimeout(async () => {
+          trailingTimer = null;
+          await doWrite();
+        }, THROTTLE_MS);
       }
     },
     async removeItem(name: string) {

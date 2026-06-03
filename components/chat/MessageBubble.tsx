@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy, Pencil, RefreshCw } from "lucide-react";
@@ -376,17 +376,39 @@ export function MessageBubble({
     setTimeout(() => setCopied(false), 1500);
   }, [message.content]);
 
-  // Per-message parser instance — the parser is recreated on every
-  // render so its internal delta tracking (this.processed) stays in
-  // sync with the stripped content passed to it.
+  // Per-message parser persisted via ref — the parser's internal delta
+  // tracking (this.processed) skips re-scanning content that was already
+  // parsed on previous renders during streaming.
+  // Dual safety: recreate parser on message switch OR if stripped content
+  // length shrinks (<ask_user> block closing mid-stream can cause this).
+  const parserRef = useRef<ArtifactParser>(new ArtifactParser());
+  const parserMsgIdRef = useRef<string | null>(null);
+  const prevStrippedLenRef = useRef(0);
+
+  const strippedContent = useMemo(
+    () =>
+      message.content
+        .replace(/<ask_user>[\s\S]*?<\/ask_user>/g, "")
+        .replace(/<ask_user>[\s\S]*$/, ""),
+    [message.content],
+  );
+
+  const needNewParser =
+    parserMsgIdRef.current !== message.id ||
+    strippedContent.length < prevStrippedLenRef.current;
+
+  if (needNewParser) {
+    parserRef.current = new ArtifactParser();
+    parserMsgIdRef.current = message.id;
+  }
+  prevStrippedLenRef.current = strippedContent.length;
+
   const segments = useMemo(() => {
-    const content = message.content
-      .replace(/<ask_user>[\s\S]*?<\/ask_user>/g, "")
-      .replace(/<ask_user>[\s\S]*$/, "");
-    const parser = new ArtifactParser();
-    parser.parse(content);
-    return parser.flush(!streaming);
-  }, [message.content, streaming]);
+    parserRef.current.parse(strippedContent);
+    // Spread — parser.flush() returns the same internal array reference
+    // every call, which would cause useMemo to skip re-renders.
+    return [...parserRef.current.flush(!streaming)];
+  }, [strippedContent, streaming]);
 
   if (isUser) {
     return (

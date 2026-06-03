@@ -198,19 +198,26 @@ export class ArtifactParser {
         this.state = "text";
       }
     }
-    this.flushTextBuf();
+    this.flushTextBuf(!hard);
     return this.segments;
   }
 
-  private flushTextBuf() {
-    if (this.textBuf) {
-      this.segments.push({
-        type: "text",
-        id: `text-${this.textIdx++}`,
-        content: this.textBuf,
-      });
-      this.textBuf = "";
+  private flushTextBuf(append = false) {
+    if (!this.textBuf) return;
+    if (append) {
+      const last = this.segments.at(-1);
+      if (last && last.type === "text") {
+        last.content += this.textBuf;
+        this.textBuf = "";
+        return;
+      }
     }
+    this.segments.push({
+      type: "text",
+      id: `text-${this.textIdx++}`,
+      content: this.textBuf,
+    });
+    this.textBuf = "";
   }
 
   private reset() {

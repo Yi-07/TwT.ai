@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { createPortal } from "react-dom";
 import type { Conversation } from "@/types/conversation";
 import { EllipsisVertical, Trash2, Pencil } from "lucide-react";
@@ -29,7 +29,7 @@ function relativeTime(ts: number): string {
 
 type Action = "delete" | "rename" | null;
 
-export function ConversationItem({
+function ConversationItemInner({
   conversation,
   isActive,
   onSelect,
@@ -255,3 +255,15 @@ export function ConversationItem({
     </>
   );
 }
+
+export const ConversationItem = memo(ConversationItemInner, (prev, next) => {
+  return (
+    prev.conversation.id === next.conversation.id &&
+    prev.conversation.title === next.conversation.title &&
+    prev.conversation.updatedAt === next.conversation.updatedAt &&
+    prev.isActive === next.isActive &&
+    prev.onSelect === next.onSelect &&
+    prev.onDelete === next.onDelete &&
+    prev.onRename === next.onRename
+  );
+});
