@@ -40,7 +40,14 @@ export function MessageList({
   const scrollToBottom = () => {
     if (!nearBottomRef.current) return;
     const c = containerRef.current;
-    if (c) c.scrollTop = c.scrollHeight;
+    if (!c) return;
+    // Re-check scroll position synchronously.  The passive "scroll"
+    // listener that updates nearBottomRef may not have fired yet
+    // (the event is still queued), especially now that streaming
+    // content updates at ~60 fps.  Without this check the user's
+    // upward scroll is overridden by the next frame's auto-scroll.
+    if (c.scrollTop + c.clientHeight < c.scrollHeight - 80) return;
+    c.scrollTop = c.scrollHeight;
   };
 
   // Track whether the user is near the bottom.  Upward scroll stops
