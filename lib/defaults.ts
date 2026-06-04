@@ -106,6 +106,7 @@ export const SYSTEM_PROMPT_ARTIFACT = [
   "## SANDBOX → CHAT COMMUNICATION",
   "",
   "window.sendPrompt(text) sends a message to chat as if the user typed it.",
+  "The text MUST use the same language the user is currently writing in.",
   "",
   "Use cases:",
   "1. Diagram nodes that trigger follow-up questions:",
