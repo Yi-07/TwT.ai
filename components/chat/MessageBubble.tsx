@@ -337,14 +337,17 @@ const SegmentRenderer = memo(
 (prev, next) =>
   prev.seg.id === next.seg.id &&
   prev.seg.type === next.seg.type &&
-  (prev.seg.type === "text"
-    ? (prev.seg as { content: string }).content ===
-      (next.seg as { content: string }).content
-    : prev.seg.type === "artifact"
-      ? (prev.seg as { content: string }).content ===
-        (next.seg as { content: string }).content
-      : true) &&
-  prev.streaming === next.streaming,
+	(prev.seg.type === "text"
+	  ? (prev.seg as { content: string }).content ===
+	    (next.seg as { content: string }).content
+	  : prev.seg.type === "artifact"
+	    ? (prev.seg as { content: string }).content ===
+	      (next.seg as { content: string }).content
+	    : prev.seg.type === "placeholder"
+	      ? (prev.seg as { preview?: string }).preview ===
+	        (next.seg as { preview?: string }).preview
+	      : true) &&
+	prev.streaming === next.streaming,
 );
 
 // --- MessageBubble ---
