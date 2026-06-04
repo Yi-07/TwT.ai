@@ -207,7 +207,15 @@ export class ArtifactParser {
     if (append) {
       const last = this.segments.at(-1);
       if (last && last.type === "text") {
-        last.content += this.textBuf;
+        // Replace with a new object so React.memo comparators detect the
+        // content change.  In-place mutation (last.content += ...) would
+        // keep the same object reference, causing SegmentRenderer's memo
+        // to see prev.seg.content === next.seg.content (both point to the
+        // already-mutated string) and skip re-render — freezing the UI.
+        this.segments[this.segments.length - 1] = {
+          ...last,
+          content: last.content + this.textBuf,
+        };
         this.textBuf = "";
         return;
       }

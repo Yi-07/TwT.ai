@@ -351,7 +351,7 @@ interface MessageBubbleProps {
   onRetry?: () => void;
 }
 
-export function MessageBubble({
+export const MessageBubble = memo(function MessageBubble({
   message,
   streaming,
   isSlow,
@@ -574,4 +574,4 @@ export function MessageBubble({
       </div>
     </div>
   );
-}
+});
