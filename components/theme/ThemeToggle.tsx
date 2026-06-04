@@ -7,10 +7,14 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 // Stage durations (ms) — kept as constants so setTimeout fallbacks
 // always match the CSS transition durations exactly.
-const RAYS_DURATION = 550; // opacity 0.35s | transform 0.55s
-const BODY_DURATION = 400; // r 0.4s
-const MASK_DURATION = 350; // r 0.35s (moon) | r 0.3s (sun)
-const FALLBACK_PAD = 100; // safety margin so timer doesn't beat transitionend
+// Mobile halves all durations to match the 600ms CSS theme transition
+// (globals.css @media (max-width: 639px) overrides --theme-transition-duration).
+const _mobile =
+  typeof window !== "undefined" && window.innerWidth < 640;
+const RAYS_DURATION = _mobile ? 275 : 550; // opacity 0.35s | transform 0.55s
+const BODY_DURATION = _mobile ? 200 : 400; // r 0.4s
+const MASK_DURATION = _mobile ? 175 : 350; // r 0.35s (moon) | r 0.3s (sun)
+const FALLBACK_PAD = _mobile ? 60 : 100; // safety margin so timer doesn't beat transitionend
 
 function positionRays(
   raysG: SVGGElement,
