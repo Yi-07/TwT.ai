@@ -107,7 +107,9 @@ function ConversationItemInner({
                 setMenuPos({ top, left: rect.right - 120 });
                 setMenuOpen((v) => !v);
               }}
-              className="flex h-6 w-6 items-center justify-center rounded text-muted-soft opacity-0 transition-opacity hover:text-body group-hover:opacity-100 dark:hover:text-on-dark"
+              className={`flex h-6 w-6 items-center justify-center rounded text-muted-soft transition-opacity hover:text-body dark:hover:text-on-dark ${
+                isActive ? "" : "opacity-0 group-hover:opacity-100"
+              }`}
               aria-label="More actions"
             >
               <EllipsisVertical size={14} />
