@@ -276,25 +276,26 @@ interface SegmentRendererProps {
   streaming?: boolean;
 }
 
-function SegmentRenderer({
-  seg,
-  onSendPrompt,
-  streaming,
-}: SegmentRendererProps) {
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [hovered, setHovered] = useState(false);
+const SegmentRenderer = memo(
+  function SegmentRenderer({
+    seg,
+    onSendPrompt,
+    streaming,
+  }: SegmentRendererProps) {
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [hovered, setHovered] = useState(false);
 
-  const handleRefresh = useCallback(() => {
-    setRefreshKey((k) => k + 1);
-  }, []);
+    const handleRefresh = useCallback(() => {
+      setRefreshKey((k) => k + 1);
+    }, []);
 
-  if (seg.type === "text") {
-    return <MemoMarkdown content={seg.content} streaming={streaming} />;
-  }
+    if (seg.type === "text") {
+      return <MemoMarkdown content={seg.content} streaming={streaming} />;
+    }
 
-  if (seg.type === "placeholder") {
-    return (
-      <PlaceholderBar
+    if (seg.type === "placeholder") {
+      return (
+        <PlaceholderBar
         title={seg.title}
         preview={seg.preview}
         artifactType={seg.artifactType}
@@ -324,7 +325,19 @@ function SegmentRenderer({
       />
     </div>
   );
-}
+},
+(prev, next) =>
+  prev.seg.id === next.seg.id &&
+  prev.seg.type === next.seg.type &&
+  (prev.seg.type === "text"
+    ? (prev.seg as { content: string }).content ===
+      (next.seg as { content: string }).content
+    : prev.seg.type === "artifact"
+      ? (prev.seg as { content: string }).content ===
+        (next.seg as { content: string }).content
+      : true) &&
+  prev.streaming === next.streaming,
+);
 
 // --- MessageBubble ---
 

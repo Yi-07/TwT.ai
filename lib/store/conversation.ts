@@ -101,19 +101,26 @@ export const useConversationStore = create<ConversationState>()(
         messageId: string,
         content: string,
       ) => {
-        set((s) => ({
-          conversations: s.conversations.map((c) =>
-            c.id === conversationId
-              ? {
-                  ...c,
-                  messages: c.messages.map((m) =>
-                    m.id === messageId ? { ...m, content } : m,
-                  ),
-                  updatedAt: Date.now(),
-                }
-              : c,
-          ),
-        }));
+        set((s) => {
+          const cIdx = s.conversations.findIndex(
+            (c) => c.id === conversationId,
+          );
+          if (cIdx === -1) return s;
+          const conv = s.conversations[cIdx];
+          const mIdx = conv.messages.findIndex(
+            (m) => m.id === messageId,
+          );
+          if (mIdx === -1) return s;
+          const newMsgs = [...conv.messages];
+          newMsgs[mIdx] = { ...newMsgs[mIdx], content };
+          const newConvs = [...s.conversations];
+          newConvs[cIdx] = {
+            ...conv,
+            messages: newMsgs,
+            updatedAt: Date.now(),
+          };
+          return { conversations: newConvs };
+        });
       },
 
       removeLastAssistantMessage: (conversationId: string) => {

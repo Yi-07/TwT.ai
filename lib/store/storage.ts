@@ -14,6 +14,8 @@ let lastWriteTime = 0;
 let trailingTimer: ReturnType<typeof setTimeout> | null = null;
 let latestValue: string | null = null;
 const THROTTLE_MS = 1000;
+// Serialise writes for browsers without navigator.locks
+let writeChain: Promise<void> = Promise.resolve();
 
 function createIdbStorage(storeName: string): StateStorage {
   if (typeof window === "undefined") {
@@ -69,7 +71,8 @@ function createIdbStorage(storeName: string): StateStorage {
               await idbMod.set(name, v, db);
             });
           } else {
-            await idbMod.set(name, v, db);
+            writeChain = writeChain.then(() => idbMod.set(name, v, db));
+            await writeChain;
           }
           lastWriteTime = Date.now();
         } catch {

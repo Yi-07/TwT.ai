@@ -13,7 +13,8 @@ const headers = {
 /** Tracks the most recent setItem call so callers can await persistence. */
 let latestSetItem: Promise<void> | null = null;
 
-// Throttle: Neon free tier caps at ~10 concurrent connections. During
+// Serialise writes — older fetch responses cannot overwrite newer data.
+let writeChain: Promise<void> = Promise.resolve();
 // streaming, Zustand persist fires setItem on every token update (50+/s),
 // which exhausts the connection pool → ECONNRESET.
 // We allow one immediate write, then coalesce subsequent calls into a
@@ -96,25 +97,25 @@ export function createServerStorage(): StateStorage {
 
       const now = Date.now();
       if (now - lastWriteTime >= THROTTLE_MS) {
-        // Enough time since last write — persist immediately
         lastWriteTime = now;
-        if (latestParsed) await doWrite(latestParsed);
+        if (latestParsed) {
+          writeChain = writeChain.then(() => doWrite(latestParsed!));
+          await writeChain;
+        }
       } else {
-        // Streaming — coalesce into a trailing timer.
-        // Use latestParsed (module-level) instead of the closure-captured
-        // parsed snapshot so the trailing write reflects the current state,
-        // not the state from when the timer was scheduled.
         if (trailingTimer) clearTimeout(trailingTimer);
         trailingPromise = new Promise<void>((resolve) => {
           trailingTimer = setTimeout(async () => {
             lastWriteTime = Date.now();
-            if (latestParsed) await doWrite(latestParsed);
+            if (latestParsed) {
+              writeChain = writeChain.then(() => doWrite(latestParsed!));
+              await writeChain;
+            }
             trailingTimer = null;
             trailingPromise = null;
             resolve();
           }, THROTTLE_MS);
         });
-        // Don't await — let caller continue; trailing timer will persist
       }
     },
     async removeItem(name: string) {

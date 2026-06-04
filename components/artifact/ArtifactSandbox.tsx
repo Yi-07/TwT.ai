@@ -248,6 +248,10 @@ export function ArtifactSandbox({
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);
 
+  useEffect(() => {
+    return () => cancelAnimationFrame(resizeRafRef.current);
+  }, []);
+
   return (
     <iframe
       ref={iframeRef}

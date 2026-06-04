@@ -16,6 +16,7 @@ export abstract class BaseProvider implements ModelProvider {
   }
 
   protected setupAbort(): void {
+    this.controller?.abort();
     this.controller = new AbortController();
   }
 

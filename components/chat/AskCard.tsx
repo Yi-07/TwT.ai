@@ -22,6 +22,13 @@ export function AskCard({ questions, onSelect, onDismiss }: AskCardProps) {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const customInputRef = useRef<HTMLInputElement>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const total = questions.length;
 
   const current = questions[index]!;
@@ -35,6 +42,7 @@ export function AskCard({ questions, onSelect, onDismiss }: AskCardProps) {
       if (index < total - 1) {
         // Not last — advance to next question after a brief highlight
         setTimeout(() => {
+          if (!mountedRef.current) return;
           setIndex((i) => i + 1);
           setSelected(null);
           setHoveredIdx(null);
@@ -47,7 +55,10 @@ export function AskCard({ questions, onSelect, onDismiss }: AskCardProps) {
             return `**${q.question}** ${answer}`;
           })
           .join("\n");
-        setTimeout(() => onSelect(formatted), 200);
+        setTimeout(() => {
+          if (!mountedRef.current) return;
+          onSelect(formatted);
+        }, 200);
       }
     },
     [index, total, onSelect, questions, answers],

@@ -84,6 +84,7 @@ export function useStream(opts: UseStreamOptions): UseStreamReturn {
   const abort = useCallback(() => {
     abortRef.current?.abort();
     clearSlowTimer();
+    isStreamingRef.current = false;
     stopFlushLoop();
     pendingRef.current = [];
   }, [clearSlowTimer, stopFlushLoop]);

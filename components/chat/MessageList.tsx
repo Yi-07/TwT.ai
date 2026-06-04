@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import type { Message } from "@/types/conversation";
 import { useConversationStore } from "@/lib/store/conversation";
 import { MessageBubble } from "./MessageBubble";
@@ -23,7 +23,10 @@ export function MessageList({
   onRetry,
 }: MessageListProps) {
 
-  const lastUserIdx = [...messages].reverse().findIndex((m) => m.role === "user");
+  const lastUserIdx = useMemo(
+    () => [...messages].reverse().findIndex((m) => m.role === "user"),
+    [messages],
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const nearBottomRef = useRef(true);
@@ -70,11 +73,7 @@ export function MessageList({
     const ro = new ResizeObserver(() => scrollToBottom());
     if (wrapper) ro.observe(wrapper);
 
-    const interval = setInterval(scrollToBottom, 120);
-    return () => {
-      clearInterval(interval);
-      ro.disconnect();
-    };
+    return () => ro.disconnect();
   }, [streaming]);
 
   // Scroll to bottom on first mount regardless
