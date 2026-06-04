@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { Copy, Pencil, RefreshCw } from "lucide-react";
+import { StreamingMarkdown } from "./StreamingMarkdown";
 import type { Message } from "@/types/conversation";
 import type { Segment } from "@/types/artifact";
 import { ArtifactParser } from "@/lib/utils/parseArtifact";
@@ -245,25 +246,8 @@ function PlaceholderBar({
   );
 }
 
-let lastMarkdownRender = 0;
-
-/**
- * During streaming, an unclosed `$` would cause remark-math to swallow
- * all subsequent content into a math node until a closing `$` arrives,
- * rendering garbled KaTeX error output.  Escape the last unclosed `$`
- * so it renders as literal text until its closing pair appears.
- */
-function shieldUnclosedMath(content: string, streaming?: boolean): string {
-  if (!streaming) return content;
-  const dollars = content.match(/\$/g);
-  if (!dollars || dollars.length % 2 === 0) return content;
-  // Odd number of $ — find and escape the last one
-  const idx = content.lastIndexOf("$");
-  if (idx < 0) return content;
-  // Don't escape if it's already escaped
-  if (idx > 0 && content[idx - 1] === "\\") return content;
-  return content.slice(0, idx) + "\\$" + content.slice(idx + 1);
-}
+const PROSE_CLASSES =
+  "prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-code-block [&_pre]:text-ink dark:[&_pre]:text-on-dark-soft [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-code-block [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_table]:w-full [&_th]:border [&_th]:border-hairline [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-hairline [&_td]:px-3 [&_td]:py-2";
 
 const MemoMarkdown = memo(
   function MemoMarkdown({
@@ -273,22 +257,25 @@ const MemoMarkdown = memo(
     content: string;
     streaming?: boolean;
   }) {
-    void streaming; // consumed by memo comparator — ESLint cannot see it
-    const safeContent = shieldUnclosedMath(content, streaming);
+    // Streaming: incremental AST rendering — only the last block re-renders.
+    // Stable blocks are wrapped in React.memo with stable keys.
+    if (streaming) {
+      return <StreamingMarkdown content={content} className={PROSE_CLASSES} />;
+    }
+
+    // Non-streaming: full ReactMarkdown render (complete, verified path).
     return (
-      <div className="prose prose-zinc prose-base dark:prose-invert max-w-none [&_pre]:rounded-xl [&_pre]:bg-code-block [&_pre]:text-ink dark:[&_pre]:text-on-dark-soft [&_pre]:px-4 [&_pre]:py-3 [&_pre]:text-sm [&_code]:rounded-md [&_code]:bg-code-block [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_table]:w-full [&_th]:border [&_th]:border-hairline [&_th]:px-3 [&_th]:py-2 [&_td]:border [&_td]:border-hairline [&_td]:px-3 [&_td]:py-2">
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-          {safeContent}
+      <div className={PROSE_CLASSES}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+        >
+          {content}
         </ReactMarkdown>
       </div>
     );
   },
-  (prev, next) => {
-    if (prev.content === next.content) return true;
-    if (next.streaming && Date.now() - lastMarkdownRender < 100) return true;
-    lastMarkdownRender = Date.now();
-    return false;
-  },
+  (prev, next) => prev.content === next.content,
 );
 
 interface SegmentRendererProps {
