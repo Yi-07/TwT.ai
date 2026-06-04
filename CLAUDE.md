@@ -323,10 +323,11 @@ show a placeholder while code is being generated, then the iframe appears once
   value into a local variable first, then use the local in the updater.
   Example: `const v = ref.current; ref.current = ""; setState(prev => prev + v);`
 
-- **`useLayoutEffect` for synchronous store sync.** When rawContent must land in
-  the Zustand store before the browser paints the next frame, `useEffect` is not
-  enough — React may batch `setRawContent` and the effect into separate renders.
-  Use `useLayoutEffect` to guarantee both updates land in the same frame.
+- **`useEffect` over `useLayoutEffect` for streaming store sync.** Streaming
+  updates arrive at display-refresh rate; `useLayoutEffect` blocks paint on
+  every frame.  `useEffect` lets the browser paint before the store update,
+  trading a sub-frame delay for significantly smoother rendering.  The store
+  update and the next render still happen before user input can intervene.
 
 - **Module-level singletons are poison for multi-instance rendering.**
   The module-level `parseArtifact()` / `flushArtifact()` singleton caused

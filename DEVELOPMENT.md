@@ -1260,44 +1260,25 @@ when content changed.  Grows Markdown re-parse to ~10 fps while raw text
 appends continue at full speed.  Combined with content-memo, the per-frame
 ReactMarkdown overhead drops ~90%.
 
+
 ---
-## Phase 31 — GPU Compositor Layer Fix
 
-### `fix: promote InputBar to GPU compositor layer to prevent iframe click interception` (824856f)
+## Phase 40 — Audit Optimizations
 
-**Symptom**: When an artifact iframe was rendered in the chat, clicking on the
-InputBar textarea passed through to the iframe. The cursor appeared on the
-artifact diagram instead of changing to a text I-beam, and clicks focused the
-iframe instead of the textarea.  The InputBar worked fine in areas with no
-iframe underneath — only the overlapping region was affected.
+### `fix: audit optimizations — serialise writes, remove redundant scroll, fix temperature=0, O(n) scan, memo` (ad1abba)
 
-**Root cause**: `MessageBubble` uses `animate-fade-in` with `animation-fill-mode:
-forwards`.  The final keyframe has `transform: translateY(0)`, which the
-`forwards` fill preserves permanently.  Any `transform` value other than `none`
-creates a GPU compositor layer — the iframe (child of the animated wrapper) was
-thus rendered in a GPU surface.  The browser's hit-testing tree walks GPU
-layers before CPU-rendered elements, so the iframe intercepted clicks even
-though InputBar had `relative z-10`.
+Code audit across 10 files fixing 4 HIGH and 6 MEDIUM issues:
 
-**Fix**: Added `[transform:translateZ(0)]` to InputBar's wrapper div
-(`components/chat/InputBar.tsx`).  `translateZ(0)` is a visual no-op — it moves
-nothing, scales nothing.  Its sole purpose is to force the InputBar into its
-own GPU compositor layer so the layer-tree ordering respects CSS `z-index`.
-
-**Dead ends explored** (5+ attempts across multiple files):
-| Attempt | Why it failed |
-|---------|---------------|
-| Clamp iframe height via `getBoundingClientRect` | Made artifacts too short in the lower half of the viewport |
-| `contain: paint` on MessageList scroll container | Does not clip iframe hit-testing (containment only affects paint, not event routing) |
-| Prop-drilling `maxHeight` through 4 components | Extra wrapper div broke the flex layout chain |
-| `bg-canvas` on InputBar | Cosmetic only — does not affect compositor hit-testing |
-| `forwardRef` + ResizeObserver on MessageList | Empty-state early return caused null ref timing gap |
-
-**Lesson**: When iframes intercept clicks despite correct `z-index`, check
-whether the iframe or its ancestor has a GPU-promoting property (`transform`,
-`will-change`, `opacity < 1`, `filter`, `backdrop-filter`).  The fix is to
-promote the victim element to its own GPU layer, not to fight the iframe's
-geometry.
+- **server-storage.ts**: serialised `doWrite` via `writeChain` to prevent stale fetch overwrite
+- **MessageList.tsx**: removed redundant 120ms polling interval during streaming
+- **useStream.ts**: `abort()` now sets `isStreamingRef.current = false`
+- **ModelSettings.tsx**: `||` → `??` so `temperature=0` is settable
+- **conversation.ts**: `updateMessage` uses `findIndex` instead of O(n) `.map()` scan
+- **MessageList.tsx**: `lastUserIdx` wrapped in `useMemo`
+- **AskCard.tsx**: `mountedRef` guard on `setTimeout` callbacks
+- **MessageBubble.tsx**: `SegmentRenderer` wrapped in `React.memo`
+- **storage.ts**: fallback write path serialised via `writeChain`
+- **ArtifactSandbox.tsx**: `cancelAnimationFrame` cleanup on unmount
 
 ---
 
@@ -1313,7 +1294,5 @@ geometry.
 - Switching conversations during active streaming does not cancel the stream
   (content arrives in the original conversation, wasting tokens)
 - Stacking multiple `ThemeToggle` instances on one page causes SVG `id` collisions
-  (`#crescent-mask`, `#mask-circle`, `#body`, `#rays` — currently safe as only
-  one toggle exists)
   (`#crescent-mask`, `#mask-circle`, `#body`, `#rays` — currently safe as only
   one toggle exists)
