@@ -9,8 +9,8 @@ Multi-model AI chat frontend inspired by claude.ai. Supports Claude, DeepSeek, M
 ## Features
 
 - Multi-model switching with custom OpenAI-compatible providers — no code changes
-- Smooth streaming with AST-incremental rendering, inline Artifact system (React / HTML / SVG)
-- KaTeX math rendering (inline `$...$` / display `$$...$$`)
+- Streaming with AST-incremental rendering, inline Artifact system (React / HTML / SVG)
+- KaTeX math rendering
 - Dual themes (Warm Canvas / Midnight), conversation history persisted in IndexedDB
 - Optional PostgreSQL server-side storage for multi-device sync
 - Copy / Edit / Retry on user messages, structured input cards (`<ask_user>`)
