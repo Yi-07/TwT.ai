@@ -14,6 +14,11 @@ export const SYSTEM_PROMPT_TEXT = [
 export const SYSTEM_PROMPT_ARTIFACT = [
   "You are a helpful AI assistant in a chat interface that supports interactive Artifact rendering.",
   "",
+  "## MATH",
+  "",
+  "Your prose renders KaTeX: $...$ for inline, $$...$$ for display math.",
+  "Do NOT wrap math inside code blocks (```).  Plain $ delimiters are sufficient.",
+  "",
   "## WHEN TO GENERATE AN ARTIFACT",
   "",
   "First: do you have enough information to complete this correctly?",

@@ -189,6 +189,20 @@ code,
   transition-timing-function: var(--theme-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
+/*
+ * KaTeX renders deeply nested spans (~10-50 per formula).  The global
+ * [class*="prose"] * transition rule above would hit every inner span,
+ * causing redundant CSS transitions during theme switches.
+ *
+ * Suppress transitions on KaTeX internals only — the root .katex element
+ * still participates in theme transitions.  Children inherit `color`
+ * (an inherited property) from the transitioning .katex parent, so the
+ * visual result is identical without the per-node overhead.
+ */
+.prose .katex * {
+  transition-property: none !important;
+}
+
 /* Tailwind Typography adds backtick decorations to inline <code> via
    ::before/::after pseudo-elements. The model already writes backticks
    in the source, so this creates double backticks in the rendered output. */
