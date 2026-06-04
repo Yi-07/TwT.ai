@@ -5,16 +5,28 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const RAY_COUNT = 8;
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-// Stage durations (ms) — kept as constants so setTimeout fallbacks
-// always match the CSS transition durations exactly.
+// Stage durations — JS timers AND inline CSS strings must scale together.
+// CSS does NOT reference --theme-transition-duration (it's only used by the
+// globals.css colour-transition rule), so both layers need mobile-aware values.
+//
 // Mobile halves all durations to match the 600ms CSS theme transition
 // (globals.css @media (max-width: 639px) overrides --theme-transition-duration).
 const _mobile =
   typeof window !== "undefined" && window.innerWidth < 640;
-const RAYS_DURATION = _mobile ? 275 : 550; // opacity 0.35s | transform 0.55s
-const BODY_DURATION = _mobile ? 200 : 400; // r 0.4s
-const MASK_DURATION = _mobile ? 175 : 350; // r 0.35s (moon) | r 0.3s (sun)
-const FALLBACK_PAD = _mobile ? 60 : 100; // safety margin so timer doesn't beat transitionend
+const _s = (d: number) => (_mobile ? d / 2 : d);
+
+// JS fallback timer durations (ms)
+const RAYS_DURATION = _s(550); // max(opacity 350, transform 550)
+const BODY_DURATION = _s(400); // r
+const MASK_DURATION = _s(350); // max(moon r 350, sun r 300)
+const FALLBACK_PAD = _s(100); // safety margin so timer doesn't beat transitionend
+
+// CSS transition value strings — embedded in inline style assignments
+const CSS_OPACITY = `${_s(350)}ms`;
+const CSS_TR_XFORM = `${_s(550)}ms`;
+const CSS_R_BODY = `${_s(400)}ms`;
+const CSS_R_MASK_EXPAND = `${_s(350)}ms`; // moon: mask circle grows
+const CSS_R_MASK_SHRINK = `${_s(300)}ms`; // sun: mask circle retracts
 
 function positionRays(
   raysG: SVGGElement,
@@ -88,7 +100,7 @@ function animateToMoon(svg: SVGSVGElement, animId: number) {
 
   // Stage 1: rays fade + rotate ccw
   raysG.style.transition =
-    "opacity 0.35s ease-in-out, transform 0.55s ease-in-out";
+    `opacity ${CSS_OPACITY} ease-in-out, transform ${CSS_TR_XFORM} ease-in-out`;
   raysG.style.opacity = "0";
   raysG.style.transform = "rotate(-45deg)";
 
@@ -98,7 +110,7 @@ function animateToMoon(svg: SVGSVGElement, animId: number) {
     if (!isCurrentAnim(animId)) return;
 
     // Stage 2: body swells, switches to filled
-    body.style.transition = "r 0.4s cubic-bezier(0.4,0,0.2,1)";
+    body.style.transition = `r ${CSS_R_BODY} cubic-bezier(0.4,0,0.2,1)`;
     body.setAttribute("r", "9");
     body.setAttribute("fill", "currentColor");
     body.setAttribute("stroke", "none");
@@ -115,7 +127,7 @@ function animateToMoon(svg: SVGSVGElement, animId: number) {
     if (!isCurrentAnim(animId)) return;
 
     // Stage 3: mask circle expands, bites out crescent
-    maskCirc.style.transition = "r 0.35s ease-out";
+    maskCirc.style.transition = `r ${CSS_R_MASK_EXPAND} ease-out`;
     maskCirc.setAttribute("r", "8");
   };
 
@@ -142,7 +154,7 @@ function animateToSun(svg: SVGSVGElement, animId: number) {
   let fb: Fallback = null;
 
   // Stage 1: mask circle retracts
-  maskCirc.style.transition = "r 0.3s ease-in";
+  maskCirc.style.transition = `r ${CSS_R_MASK_SHRINK} ease-in`;
   maskCirc.setAttribute("r", "0");
 
   const onMaskDone = () => {
@@ -151,7 +163,7 @@ function animateToSun(svg: SVGSVGElement, animId: number) {
     if (!isCurrentAnim(animId)) return;
 
     // Stage 2: body shrinks, switches to stroke
-    body.style.transition = "r 0.4s cubic-bezier(0.4,0,0.2,1)";
+    body.style.transition = `r ${CSS_R_BODY} cubic-bezier(0.4,0,0.2,1)`;
     body.setAttribute("r", "7");
     body.setAttribute("fill", "none");
     body.setAttribute("stroke", "currentColor");
@@ -170,7 +182,7 @@ function animateToSun(svg: SVGSVGElement, animId: number) {
     // Stage 3: rays expand + rotate cw back
     positionRays(raysG, 10, 15, 0);
     raysG.style.transition =
-      "opacity 0.35s ease-in-out, transform 0.55s ease-in-out";
+      `opacity ${CSS_OPACITY} ease-in-out, transform ${CSS_TR_XFORM} ease-in-out`;
     raysG.style.opacity = "1";
     raysG.style.transform = "rotate(0deg)";
   };
