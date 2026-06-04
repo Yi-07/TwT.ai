@@ -62,6 +62,8 @@ and an Artifact system that renders interactive HTML/React views inline in chat.
 │   │   ├── MessageBubble.tsx       # Splits segments: text → Markdown, artifact → ArtifactSandbox
 │   │   ├── InputBar.tsx            # Text input + send button
 │   │   ├── AskCard.tsx             # Structured question tabs (<ask_user> JSON parsing)
+│   │   ├── SelectionReply.tsx      # Floating Reply button on text selection
+│   │   ├── StreamingMarkdown.tsx   # AST-incremental markdown renderer (streaming path)
 │   ├── sidebar/
 │   │   ├── ConversationList.tsx    # Full history list
 │   │   └── ConversationItem.tsx    # Single history entry with title + timestamp
@@ -296,10 +298,10 @@ User input
   → Provider Registry → active Provider
   → ReadableStream (SSE)
   → useStream hook (reads chunks, RAF-throttled → rawContent)
-  → useLayoutEffect syncs rawContent into store placeholder message (stable msgId)
+  → useEffect syncs rawContent into store placeholder message (stable msgId)
   → MessageBubble (key=msgId) calls ArtifactParser on message.content
   → Segment[] renders in order:
-      Segment.type === 'text'        → <ReactMarkdown>
+      Segment.type === 'text'        → MemoMarkdown → StreamingMarkdown (streaming) | ReactMarkdown (done)
       Segment.type === 'placeholder' → animated "Generating..." indicator
       Segment.type === 'artifact'    → <ArtifactToolbar> + <ArtifactSandbox>
 ```
@@ -535,18 +537,14 @@ show a placeholder while code is being generated, then the iframe appears once
   polling interval bound only to `[streaming]`.  Added `ResizeObserver`
   on the message wrapper to catch layout-computed height changes.
 
-### Mobile Theme Transition
+### Theme Toggle Animation
 
-- **GPU compositor overload**: toggling `data-theme` applies 1.2-1.8s
-  CSS transitions to hundreds of DOM nodes simultaneously via the global
-  attribute-selector rule.  Mobile GPUs drop frames.
-- **Fix**: `@media (max-width: 639px)` reduces `--theme-transition-duration`
-  to 600ms on both light and dark roots.  `localStorage.setItem` deferred
-  via `setTimeout(0)` to avoid blocking the current frame.
-- **ThemeToggle icon freeze**: the SVG morph animation used a three-stage
-  `transitionend` chain.  On mobile, `transitionend` may not fire if the
-  transition is interrupted or the compositor is busy.  Fix: every stage
-  has a `setTimeout` fallback at `stageDuration + 100ms`.
+- **Three-stage `transitionend` chain**: rays fade → body morph → mask slide.
+  Every stage has a `setTimeout` fallback at `stageDuration + 100ms` in case
+  `transitionend` is interrupted or lost (tab backgrounded, compositor busy).
+- **Mobile & desktop share the same timings** (1200ms dusk / 1800ms dawn).
+  A historic 600ms mobile override was removed once the global transition
+  selector was narrowed from bare `*` to targeted `[class*="bg-"]` etc.
 
 ### ConversationItem Menu (Portal)
 
@@ -581,28 +579,29 @@ show a placeholder while code is being generated, then the iframe appears once
 - **Assistant avatar**: `hidden sm:block` — hidden on mobile to save
   horizontal space.
 
-### Streaming Rendering Performance
+### Streaming Rendering — AST-Incremental Markdown
 
-- **ReactMarkdown is the bottleneck, not the parser.**  The artifact parser
-  is a lightweight state machine; `ReactMarkdown` + `remarkGfm` running
-  on every text segment every frame is what causes streaming stutter.
-- **Memo by content**: wrap `ReactMarkdown` in `React.memo` with
-  `prev.content === next.content`.  Stable text segments (text-0, text-1...)
-  skip re-parsing entirely — only the actively growing segment incurs cost.
-- **Throttle the growing segment**: a module-level `lastMarkdownRender`
-  timer gates memo to ~100ms intervals during streaming.  Content changes
-  faster than 100ms are skipped, keeping Markdown parse load to ~10 fps
-  while raw text appends at full speed.
-- **RAF + fallback interval**: SSE deltas are buffered and flushed via
-  `requestAnimationFrame` (smooth foreground rendering) with a 200ms
-  `setInterval` fallback (prevents data stalling when the tab is
-  backgrounded or on mobile app-switch).
+The `MemoMarkdown` component (inside `MessageBubble`) splits rendering
+based on `streaming` prop:
+
+- **Streaming** → `StreamingMarkdown` (AST-incremental):
+  Uses `unified().use(remarkParse)` to parse the full markdown into a
+  block-level AST.  All root children except the last are "stable"
+  (preceded by `\n\n` or closing fences) — rendered once via `React.memo`
+  `StableBlock` and never re-render.  Only the last (growing) block
+  incurs per-frame `ReactMarkdown` cost.  On narrow viewports (<768px)
+  a fast `\n\n` string split replaces the unified parse to stay within
+  the 16ms frame budget.
+- **Non-streaming** → full `ReactMarkdown` render (complete, verified path).
+
 - **`useEffect` over `useLayoutEffect`** for rawContent → store sync:
   async effect lets the browser paint before the store update, avoiding
   frame drops during heavy streaming.
 - **`startTransition`** wraps `setIsStreaming(false)` so the final
   Markdown re-parse is scheduled as low-priority — the browser finishes
   the current paint before switching from plain-text to full GFM.
+- **`MessageBubble` is `React.memo`'d**: non-streaming messages keep
+  stable prop references and are bailed out each frame.
 
 - **frontend-design**: Read before developing any UI component — applies to all files
   under components/chat/, components/sidebar/, components/model/, components/artifact/
@@ -760,7 +759,7 @@ NEXT_PUBLIC_APP_URL=                 # e.g. http://localhost:3000
   (e.g. `PROVIDER_API_KEY` + `PROVIDER_MODEL`) to `.env.example`
 - **Always** capture ref values into local variables before clearing the ref
   and passing to `setState` — React updaters run asynchronously
-- **Always** use `useLayoutEffect` (not `useEffect`) for state syncs that must
-  land in the same frame as the triggering render
+- **Always** prefer `useEffect` for streaming store sync (avoids blocking paint).
+  Reserve `useLayoutEffect` for cases where the DOM must be read before paint
 - **Always** commit at every checkpoint listed above before proceeding — this enables
   clean rollback if a later checkpoint introduces a regression

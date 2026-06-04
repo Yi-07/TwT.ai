@@ -1198,6 +1198,10 @@ Split the `useEffect` in `MessageList`:
 
 ## Phase 37 — Mobile Theme Transition
 
+> **Superseded by Phase 44.** The 600ms mobile override was removed once
+> the global transition selector was narrowed from bare `*` to targeted
+> `[class*="bg-"]` etc. (Phase 30) and KaTeX inner spans were exempted.
+
 ### `fix: mobile theme toggle lag — reduce transition duration, defer localStorage` (cbe87bd)
 
 - **globals.css**: `@media (max-width: 639px)` reduces `--theme-transition-duration`
@@ -1296,3 +1300,99 @@ Code audit across 10 files fixing 4 HIGH and 6 MEDIUM issues:
 - Stacking multiple `ThemeToggle` instances on one page causes SVG `id` collisions
   (`#crescent-mask`, `#mask-circle`, `#body`, `#rays` — currently safe as only
   one toggle exists)
+
+---
+
+## Phase 41 — KaTeX Math Rendering
+
+### `feat: add KaTeX math rendering with streaming-safe unclosed $ guard` (86d120f)
+
+- `remark-math` + `rehype-katex` plugins added to `ReactMarkdown` chain
+- `shieldUnclosedMath()`: during streaming, escapes the last unclosed `$`
+  so remark-math does not swallow subsequent content into a math node
+- `.prose .katex * { transition-property: none }` in globals.css — prevents
+  redundant CSS transitions on KaTeX inner spans during theme switches
+- System prompt MATH section: instructs model to use `$...$` / `$$...$$`
+  instead of wrapping formulas in code blocks
+- New deps: `remark-math`, `rehype-katex`, `katex`
+- Files: `app/globals.css`, `app/layout.tsx`,
+  `components/chat/MessageBubble.tsx`, `lib/defaults.ts`
+
+---
+
+## Phase 42 — AST-Incremental Markdown Rendering
+
+### `feat: AST-incremental markdown rendering for 60fps streaming smoothness` (8ecb547)
+
+**StreamingMarkdown.tsx** (new component):
+- `partitionBlocks()` uses `unified().use(remarkParse).use(remarkGfm).use(remarkMath).parse(content)` for block-level AST
+- Root children `[0..n-2]` are stable → rendered once via `React.memo` StableBlock
+- Last child `[n-1]` is unstable → re-renders each frame through `ReactMarkdown`
+- Removes module-level `lastMarkdownRender` 100ms throttle — no longer needed
+
+**MemoMarkdown** (MessageBubble.tsx):
+- Splits streaming → StreamingMarkdown vs non-streaming → ReactMarkdown
+- Memo comparator simplified to `prev.content === next.content`
+- New deps: `remark-parse`, `unified`
+
+### `perf: mobile streaming — skip unified.parse(), use \n\n split` (c6a38c7)
+
+- On narrow viewports (<768px), `partitionBlocksFast()` uses O(n) `\n\n` string split
+- `unified.parse()` takes 4–8ms on mobile CPUs vs <1ms for string scan
+- Code blocks with internal blank lines may be split during streaming;
+  full ReactMarkdown path renders final content correctly after streaming ends
+
+---
+
+## Phase 43 — Streaming Freeze & Scroll Fixes
+
+### `fix: prevent streaming UI freeze from in-place segment mutation, add memo to MessageBubble` (0152f08)
+
+**P0 — flushTextBuf mutation freeze** (`lib/utils/parseArtifact.ts`):
+- `flushTextBuf(append=true)` was mutating `last.content += this.textBuf` in-place
+- `SegmentRenderer`'s `React.memo` saw `prev.seg === next.seg` (same object)
+  and always returned `true` → skip re-render → streaming text frozen
+- Fix: creates new segment object `{ ...last, content: last.content + this.textBuf }`
+
+**P1 — MessageBubble React.memo** (`components/chat/MessageBubble.tsx`):
+- Wrapped `MessageBubble` in `React.memo` with default shallow comparison
+- Non-streaming messages keep stable prop references → bailed out each frame
+
+### `fix: placeholder memo comparator now compares preview content` (56ed2ce)
+
+- `SegmentRenderer` memo comparator had a `true` fallthrough for placeholder types
+- PlaceholderBar frozen during streaming — preview never updated
+- Now compares `prev.seg.preview` for placeholder segments
+
+### `fix: prevent forced auto-scroll during streaming at 60fps` (ee1e306)
+
+- `scrollToBottom()` now re-checks DOM scroll position synchronously
+- Race: passive `scroll` listener not yet fired when next frame's
+  useEffect+ResizeObserver called `scrollToBottom()` → `nearBottomRef` stale
+- Root cause exposed by AST incremental rendering: 60fps vs 10fps before
+
+### `fix: prompt — sendPrompt text must match user's conversation language` (b52f3ff)
+
+- One-line addition to system prompt sandbox communication section
+
+---
+
+## Phase 44 — Theme Unification
+
+### `fix: mobile theme icon animation — halve stage durations to match 600ms CSS transition` (ff8b47b)
+
+- JS timer constants scaled on mobile to match 600ms CSS override
+
+### `fix: actually scale icon CSS transitions on mobile, not just JS timers` (1882fa8)
+
+- CSS inline transition strings now use template literals with scaled constants
+- Previous commit only changed JS fallback timers — visual timing unchanged
+
+### `unify: remove mobile 600ms theme transition override — same as desktop` (caabf2d)
+
+- Removed `@media (max-width: 639px)` block clamping `--theme-transition-duration` to 600ms
+- Mobile and desktop now share 1200ms (dusk) / 1800ms (dawn)
+- Reverted mobile-specific duration scaling in ThemeToggle
+- Original 600ms limit was needed when bare `*` selector applied transitions;
+  Phase 30 narrowed to attribute selectors, KaTeX spans now exempted
+- **Supersedes Phase 37**

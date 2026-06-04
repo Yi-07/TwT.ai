@@ -9,7 +9,8 @@
 ## 特性
 
 - 多模型切换，支持自定义 OpenAI 兼容供应商，无需改代码
-- 流式响应，Artifact 系统内嵌渲染交互式 React / HTML / SVG
+- 流式响应，AST 增量渲染丝滑无卡顿，Artifact 系统内嵌渲染交互式 React / HTML / SVG
+- KaTeX 数学公式渲染（行内 `$...$` / 块级 `$$...$$`）
 - 双主题（暖白 / 午夜），对话历史 IndexedDB 持久化
 - 可选 PostgreSQL 服务端存储，支持多设备同步
 - 复制 / 编辑 / 重试用户消息，结构化输入卡片（`<ask_user>`）
@@ -92,7 +93,8 @@ NEXT_PUBLIC_DEBUG=false      # 关闭调试工具
 | 语言 | TypeScript |
 | 样式 | Tailwind CSS v4 |
 | 状态管理 | Zustand v5 |
-| Markdown | react-markdown + remark-gfm |
+| Markdown | react-markdown + remark-gfm + remark-math |
+| 数学渲染 | KaTeX + rehype-katex |
 | 包管理器 | pnpm |
 
 架构与贡献指南见 [CLAUDE.md](CLAUDE.md)。
